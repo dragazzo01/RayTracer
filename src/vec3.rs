@@ -1,5 +1,5 @@
+use crate::*;
 use std::ops::*;
-use std::io::{Error, Write};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vec3 {
@@ -111,6 +111,24 @@ impl Vec3 {
         Self {x, y, z}
     }
 
+    pub fn random() -> Self {
+        let mut rng = rand::thread_rng();
+        Self {
+            x : gen_01(&mut rng),
+            y : gen_01(&mut rng),
+            z: gen_01(&mut rng),
+        }
+    }
+
+    pub fn random_bound(min : f64, max : f64) -> Self {
+        let mut rng = rand::thread_rng();
+        Self {
+            x : gen_bound(min, max, &mut rng),
+            y : gen_bound(min, max, &mut rng),
+            z: gen_bound(min, max, &mut rng),
+        }
+    }
+
     pub fn norm(self) -> f64 {
         self.x*self.x + self.y*self.y + self.z*self.z
     }
@@ -119,11 +137,11 @@ impl Vec3 {
         self.norm().sqrt()
     }
 
-    pub fn dot(self, other : Vec3) -> f64 {
+    pub fn dot(self, other : &Vec3) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
-    pub fn cross(self, other: Vec3) -> Vec3 {
+    pub fn cross(self, other: &Vec3) -> Vec3 {
         Vec3 {
             x: self.y * other.z - self.z * other.y,
             y: self.z * other.x - self.x * other.z,
@@ -147,9 +165,10 @@ impl Vec3 {
     }
 
     pub fn write_color<W: Write>(&self, file: &mut W) -> Result<(), Error> {
-        let ir = (255.999 * self.x) as i32;
-        let ig = (255.999 * self.y) as i32;
-        let ib = (255.999 * self.z) as i32;
+        let intenstity = Interval::new(0.0, 0.999);
+        let ir = (256.0 * intenstity.clamp(self.x)) as i32;
+        let ig = (255.999 * intenstity.clamp(self.y)) as i32;
+        let ib = (255.999 * intenstity.clamp(self.z)) as i32;
 
         file.write_all(format!("{} {} {}", ir, ig, ib).as_bytes())?;
         Ok(())
