@@ -129,6 +129,25 @@ impl Vec3 {
         }
     }
 
+    pub fn random_unit() -> Self {
+        loop {
+            let canidate = Self::random_bound(-1.0, 1.0);
+            let norm = canidate.norm();
+            if 1e-60 < norm && norm <= 1.0 {
+                return canidate.normalize();
+            }
+        }
+    }
+
+    pub fn random_hemisphere(normal : &Self) -> Self {
+        let on_sphere = Self::random_unit();
+        if on_sphere.dot(normal) > 0.0 {
+            on_sphere
+        } else {
+            -1.0 * on_sphere
+        }
+    }
+
     pub fn norm(self) -> f64 {
         self.x*self.x + self.y*self.y + self.z*self.z
     }

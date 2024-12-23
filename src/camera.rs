@@ -1,9 +1,10 @@
 use crate::*;
 
 pub struct Camera {
-    pub samples_per_pixel : i32,
-    pub aspect_ratio : f64, 
-    pub image_width : i32,
+    samples_per_pixel : i32,
+    aspect_ratio : f64, 
+    max_depth : i32,
+    image_width : i32,
     image_height : i32,
     pixel_samples_scale : f64,
     center : Point3,
@@ -13,7 +14,8 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn initilize(samples_per_pixel : i32, aspect_ratio : f64, image_width : i32) -> Self {
+    pub fn initilize(samples_per_pixel : i32, aspect_ratio : f64, 
+                    max_depth : i32, image_width : i32) -> Self {
         let image_height = (image_width as f64 / aspect_ratio) as i32;
         let image_height = if image_height < 1 {1} else {image_height};
 
@@ -40,6 +42,7 @@ impl Camera {
         Self {
             samples_per_pixel,
             aspect_ratio,
+            max_depth,
             image_width,
             image_height,
             pixel_samples_scale,
@@ -50,10 +53,17 @@ impl Camera {
         }
     }
 
-    fn ray_color(ray : &Ray, world : &HittableList) -> Color3 {
-        match world.hit(ray, Interval::new(0.0, f64::INFINITY)) {
-            Some(hr) => return 0.5 * (hr.normal + Color3::new(1.0, 1.0, 1.0)),
+    fn ray_color(ray : &Ray, world : &HittableList, depth : i32) -> Color3 {
+        if depth <= 0 {
+            return Color3::zero();
+        }
+
+        match world.hit(ray, Interval::new(0.001, INF)) {
             None => (),
+            Some(hr) => {
+                let direction = Vec3::random_hemisphere(&hr.normal);
+                return 0.5 * Self::ray_color(&Ray::new(hr.point, direction), world, depth - 1);
+            },
         }
 
         let unit_direction = ray.direction.normalize();
@@ -78,7 +88,8 @@ impl Camera {
     
     pub fn render(&self, world : &HittableList, path : &str) -> Result<(), Error>  {
         let mut file = File::create(path)?; // Creates or overwrites the file
-        file.write_all(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes())?;        // Write data as bytes
+        // Write data as bytes
+        file.write_all(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes())?;        
 
         let mut rng = rand::thread_rng();
         println!("Creating a {} x {} image", self.image_width, self.image_height);
@@ -88,7 +99,7 @@ impl Camera {
                 let mut pixel_color = Color3::new(0.0, 0.0, 0.0);
                 for _ in 0..self.samples_per_pixel {
                     let r = self.get_ray(i, j, &mut rng);
-                    pixel_color = pixel_color + Self::ray_color(&r, &world);
+                    pixel_color = pixel_color + Self::ray_color(&r, &world, self.max_depth);
                 }
                 pixel_color = pixel_color * self.pixel_samples_scale;
                 pixel_color.writeln_color(&mut file)?;

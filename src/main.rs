@@ -31,7 +31,7 @@ fn main() -> Result<(), Error> {
     world.add(Rc::new(Sphere::new(Vec3::new(0.0, 0.0,-1.0), 0.5)));
     world.add(Rc::new(Sphere::new(Vec3::new(0.0,-100.5,-1.0), 100.0)));
     
-    let camera = Camera::initilize(100, 16.0/9.0, 400);
+    let camera = Camera::initilize(100, 16.0/9.0, 50, 400);
     let _ = camera.render(&world, "images/temp.ppm");
     Ok(())
 }
