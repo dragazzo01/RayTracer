@@ -1,13 +1,14 @@
 use crate::*;
 
-pub struct HitRecord {
+pub struct HitRecord<'a> {
     pub point : Point3,
     pub normal : Vec3,
     pub t : f64,
+    pub mat :Rc<&'a dyn Material>,
     pub front_face : bool,
 }
 
-impl HitRecord {
+impl HitRecord<'_> {
     fn set_face_normal(&mut self, ray : &Ray, outward_normal : &Vec3) {
         self.front_face = ray.direction.dot(outward_normal) < 0.0;
         self.normal = if self.front_face {*outward_normal} else {-1.0 * *outward_normal}
@@ -18,18 +19,20 @@ pub trait Hittable {
     fn hit(&self, ray : &Ray, interval : Interval) -> Option<HitRecord>;
 }
 
-pub struct Sphere {
+pub struct Sphere<T : Material> {
     pub center : Point3,
     pub radius : f64,
+    mat : T,
+    
 }
 
-impl Sphere {
-    pub fn new(center : Point3, radius : f64) -> Self {
-        Sphere {center, radius}
+impl<T : Material> Sphere<T> {
+    pub fn new(center : Point3, radius : f64, mat : T) -> Self {
+        Sphere {center, radius, mat}
     }
 }
 
-impl Hittable for Sphere {
+impl<T : Material> Hittable for Sphere<T> {
     fn hit(&self, ray : &Ray, interval : Interval) -> Option<HitRecord> {
         //determine if ray hits sphere 
         let oc = self.center - ray.origin;
@@ -55,7 +58,7 @@ impl Hittable for Sphere {
         let point = ray.at(root);
         let normal = (point - self.center) / self.radius;
 
-        let mut res = HitRecord {point, normal, t, front_face : false};
+        let mut res = HitRecord {point, normal, t, mat : Rc::new(&self.mat), front_face : false};
         res.set_face_normal(ray, &normal);
         Some(res)
     }

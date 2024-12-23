@@ -1,6 +1,4 @@
 use crate::*;
-//use crate::interval::Interval;
-//use crate::hittable::{Hittable, HittableList};
 
 pub struct Ray {
     pub origin : Point3,

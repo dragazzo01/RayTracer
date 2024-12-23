@@ -2,7 +2,7 @@ use crate::*;
 
 pub struct Camera {
     samples_per_pixel : i32,
-    aspect_ratio : f64, 
+    //aspect_ratio : f64, 
     max_depth : i32,
     image_width : i32,
     image_height : i32,
@@ -41,7 +41,7 @@ impl Camera {
 
         Self {
             samples_per_pixel,
-            aspect_ratio,
+            //aspect_ratio,
             max_depth,
             image_width,
             image_height,
@@ -61,8 +61,11 @@ impl Camera {
         match world.hit(ray, Interval::new(0.001, INF)) {
             None => (),
             Some(hr) => {
-                let direction = Vec3::random_hemisphere(&hr.normal);
-                return 0.5 * Self::ray_color(&Ray::new(hr.point, direction), world, depth - 1);
+                match hr.mat.scatter(ray, &hr) {
+                    None => return Color3::zero(),
+                    Some((attenuation, scattered)) => 
+                        return attenuation * Self::ray_color(&scattered, world, depth - 1),
+                }
             },
         }
 
@@ -94,7 +97,7 @@ impl Camera {
         let mut rng = rand::thread_rng();
         println!("Creating a {} x {} image", self.image_width, self.image_height);
         for j in 0..self.image_height {
-            println!("\rScanlines remaining: {}", (self.image_height - j));
+            write_progress(self.image_height - j, self.image_height);
             for i in 0..self.image_width {
                 let mut pixel_color = Color3::new(0.0, 0.0, 0.0);
                 for _ in 0..self.samples_per_pixel {
@@ -105,7 +108,7 @@ impl Camera {
                 pixel_color.writeln_color(&mut file)?;
             }
         }
-        println!("Done!                   \n");
+        println!("\nDone!                   ");
         Ok(())
     }
 }

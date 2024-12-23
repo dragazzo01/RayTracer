@@ -148,6 +148,15 @@ impl Vec3 {
         }
     }
 
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        self.x < s && self.y < s && self.z < s
+    }
+
+    pub fn reflect(&self, n : &Self) -> Self {
+        *self - 2.0 * self.dot(n) * *n
+    }
+
     pub fn norm(self) -> f64 {
         self.x*self.x + self.y*self.y + self.z*self.z
     }
@@ -183,11 +192,23 @@ impl Vec3 {
         Ok(())
     }
 
+    fn linear_to_gamma(linear_component : f64) -> f64 {
+        if linear_component > 0.0 {
+            linear_component.sqrt()
+        } else {
+            0.0
+        }
+    }
+
     pub fn write_color<W: Write>(&self, file: &mut W) -> Result<(), Error> {
+        let r = Self::linear_to_gamma(self.x);
+        let g = Self::linear_to_gamma(self.y);
+        let b = Self::linear_to_gamma(self.z);
+        
         let intenstity = Interval::new(0.0, 0.999);
-        let ir = (256.0 * intenstity.clamp(self.x)) as i32;
-        let ig = (255.999 * intenstity.clamp(self.y)) as i32;
-        let ib = (255.999 * intenstity.clamp(self.z)) as i32;
+        let ir = (256.0 * intenstity.clamp(r)) as i32;
+        let ig = (256.0 * intenstity.clamp(g)) as i32;
+        let ib = (256.0 * intenstity.clamp(b)) as i32;
 
         file.write_all(format!("{} {} {}", ir, ig, ib).as_bytes())?;
         Ok(())
