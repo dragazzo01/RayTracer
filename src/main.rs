@@ -22,7 +22,7 @@ pub use vec3::*;
 pub use ray::Ray;
 pub use hittable::*;
 pub use interval::Interval;
-pub use camera::Camera;
+pub use camera::*;
 pub use random::*;
 pub use constants::*;
 pub use material::*;
@@ -31,18 +31,39 @@ pub use material::*;
 
 fn main() -> Result<(), Error> {
     // Construct World
-    let mut world = HittableList::empty();
     let mat_ground = Lambertian::new(Color3::new(0.8, 0.8, 0.0));
     let mat_center = Lambertian::new(Color3::new(0.1, 0.2, 0.5));
-    let mat_left = Metal::new(Color3::new(0.8, 0.8, 0.8), 0.3);
+    let mat_left = Dielectric::new(1.50);
+    let mat_bubble = Dielectric::new(1.00 / 1.50);
     let mat_right = Metal::new(Color3::new(0.8, 0.6, 0.2), 1.0);
 
+    let mut world = HittableList::empty();
     world.add(Rc::new(Sphere::new(Vec3::new( 0.0, -100.5, -1.0), 100.0, mat_ground)));
     world.add(Rc::new(Sphere::new(Vec3::new( 0.0,    0.0, -1.2),   0.5, mat_center)));
     world.add(Rc::new(Sphere::new(Vec3::new(-1.0,    0.0, -1.0),   0.5, mat_left)));
+    world.add(Rc::new(Sphere::new(Vec3::new(-1.0,    0.0, -1.0),   0.4, mat_bubble)));
     world.add(Rc::new(Sphere::new(Vec3::new( 1.0,    0.0, -1.0),   0.5, mat_right)));
+    /* let radius = f64::cos(PI / 4.0);
+    let mat_left = Lambertian::new(Color3::new(0.0, 0.0, 1.0));
+    let mat_right = Lambertian::new(Color3::new(1.0, 0.0, 0.0));
     
-    let camera = Camera::initilize(100, 16.0/9.0, 50, 400);
+    let mut world = HittableList::empty();
+    world.add(Rc::new(Sphere::new(Point3::new(-radius, 0.0, -1.0), radius, mat_left)));
+    world.add(Rc::new(Sphere::new(Point3::new(radius, 0.0, -1.0), radius, mat_right))); */
+    
+
+    let args = CamArgs {
+        aspect_ratio : 16.0 / 9.0,
+        image_width : 400,
+        samples_per_pixel : 100,
+        max_depth : 50,
+        vfov : 20.0,
+        look_from : Point3::new(-2.0, 2.0, 1.0),
+        look_at : Point3::new(0.0, 0.0, -1.0),
+        v_up : Vec3::new(0.0, 1.0, 0.0),
+    };
+
+    let camera = Camera::initilize(args);
     let _ = camera.render(&world, "images/temp.ppm");
     Ok(())
 }

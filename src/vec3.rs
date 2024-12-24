@@ -157,6 +157,13 @@ impl Vec3 {
         *self - 2.0 * self.dot(n) * *n
     }
 
+    pub fn refract(&self, n : &Self, etai_over_etat : f64) -> Self {
+        let cos_theta = f64::min((-1.0 * *self).dot(n), 1.0);
+        let r_out_perp = etai_over_etat * (*self + cos_theta * *n);
+        let r_out_parallel = -(1.0 - r_out_perp.norm()).abs().sqrt() * *n;
+        r_out_perp + r_out_parallel
+    }
+
     pub fn norm(self) -> f64 {
         self.x*self.x + self.y*self.y + self.z*self.z
     }
@@ -165,19 +172,19 @@ impl Vec3 {
         self.norm().sqrt()
     }
 
-    pub fn dot(self, other : &Vec3) -> f64 {
+    pub fn dot(self, other : &Self) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
-    pub fn cross(self, other: &Vec3) -> Vec3 {
-        Vec3 {
+    pub fn cross(self, other: &Self) -> Self {
+        Self {
             x: self.y * other.z - self.z * other.y,
             y: self.z * other.x - self.x * other.z,
             z: self.x * other.y - self.y * other.x,
         }
     }
 
-    pub fn normalize(self) -> Vec3 {
+    pub fn normalize(self) -> Self {
         self / self.length()
     }
 
