@@ -148,6 +148,15 @@ impl Vec3 {
         }
     }
 
+    pub fn random_disk() -> Self {
+        loop {
+            let p = Self::new(random_bound(-1.0, 1.0), random_bound(-1.0, 1.0), 0.0);
+            if p.norm() < 1.0 {
+                return p;
+            }
+        }
+    }
+
     pub fn near_zero(&self) -> bool {
         let s = 1e-8;
         self.x < s && self.y < s && self.z < s

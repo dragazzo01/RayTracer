@@ -50,17 +50,61 @@ fn main() -> Result<(), Error> {
     let mut world = HittableList::empty();
     world.add(Rc::new(Sphere::new(Point3::new(-radius, 0.0, -1.0), radius, mat_left)));
     world.add(Rc::new(Sphere::new(Point3::new(radius, 0.0, -1.0), radius, mat_right))); */
+    /* let mut world = HittableList::empty();
     
+    let mat_ground = Lambertian::new(Color3::new(0.5, 0.5, 0.5));
+    let ground = Sphere::new(Point3::new(0.0, -1000.0, 0.0), 1000.0, mat_ground);
+    world.add(Rc::new(ground));
+
+    let mut rng = rand::thread_rng();
+    for a in -11..11 {
+        for b in  -11..11{
+            let choose_mat = gen_01(&mut rng);
+            let center = Point3::new(a as f64 + 0.9*gen_01(&mut rng), 0.2, b as f64 + 0.9*gen_01(&mut rng));
+
+            if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                if choose_mat < 0.8 {
+                    //diffuse
+                    let albedo = Color3::random() * Color3::random();
+                    let mat = Lambertian::new(albedo);
+                    world.add(Rc::new(Sphere::new(center, 0.2, mat)));
+
+                } else if choose_mat < 0.95 {
+                    //metal
+                    let albedo = Color3::random_bound(0.5, 1.0);
+                    let fuzz = gen_bound(0.0, 0.5, &mut rng);
+                    let mat = Metal::new(albedo, fuzz);
+                    world.add(Rc::new(Sphere::new(center, 0.2, mat)));
+                } else {
+                    //glass
+                    let mat = Dielectric::new(1.5);
+                    world.add(Rc::new(Sphere::new(center, 0.2, mat)));
+                }
+            }
+        }
+    }
+
+    let mat1 = Dielectric::new(1.5);
+    world.add(Rc::new(Sphere::new(Point3::new(0.0, 1.0, 0.0), 1.0, mat1)));
+    
+    let mat2 = Lambertian::new(Color3::new(0.4, 0.2, 0.1));
+    world.add(Rc::new(Sphere::new(Point3::new(-4.0, 1.0, 0.0), 1.0, mat2)));
+
+    let mat3 = Metal::new(Color3::new(0.7, 0.6, 0.5), 0.0);
+    world.add(Rc::new(Sphere::new(Point3::new(4.0, 1.0, 0.0), 1.0, mat3)));
+ */
 
     let args = CamArgs {
         aspect_ratio : 16.0 / 9.0,
         image_width : 400,
         samples_per_pixel : 100,
         max_depth : 50,
-        vfov : 20.0,
-        look_from : Point3::new(-2.0, 2.0, 1.0),
-        look_at : Point3::new(0.0, 0.0, -1.0),
-        v_up : Vec3::new(0.0, 1.0, 0.0),
+        vfov : 20.,
+        look_from : Point3::new(-2., 2., 1.),
+        look_at : Point3::new(0., 0., -1.),
+        v_up : Vec3::new(0., 1., 0.),
+        defocus_angle : 10.,
+        focus_dist : 3.4,
     };
 
     let camera = Camera::initilize(args);
