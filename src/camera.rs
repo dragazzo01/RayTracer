@@ -1,4 +1,6 @@
 use crate::*;
+use std::thread;
+use std::sync::Mutex;
 
 pub struct CamArgs {
     pub aspect_ratio : f64,
@@ -11,8 +13,10 @@ pub struct CamArgs {
     pub v_up : Vec3,
     pub defocus_angle : f64,
     pub focus_dist : f64,
+    pub thread_num : i32,
 }
 
+#[derive(Clone)]
 pub struct Camera {
     samples_per_pixel : i32,
     //aspect_ratio : f64, 
@@ -27,6 +31,7 @@ pub struct Camera {
     defocus_angle : f64,
     defocus_disk_u : Vec3,
     defocus_disk_v : Vec3,
+    thread_num : i32,
     //look_from : Point3,
     //look_at : Point3,
     //v_up : Vec3,
@@ -48,6 +53,7 @@ impl Camera {
         let v_up = args.v_up;
         let defocus_angle = args.defocus_angle;
         let focus_dist = args.focus_dist;
+        let thread_num = args.thread_num;
 
 
         let image_height = (image_width as f64 / aspect_ratio) as i32;
@@ -101,6 +107,7 @@ impl Camera {
             defocus_angle,
             defocus_disk_u,
             defocus_disk_v,
+            thread_num,
             //look_from,
             //look_at,
             //v_up,
@@ -153,8 +160,80 @@ impl Camera {
 
         Ray::new(ray_origin, ray_direction)
     }
+
+    fn render_line(&self, world : &HittableList, j : i32) -> Vec<Color3> {
+        let mut rng = rand::thread_rng();
+        let mut scan_line = Vec::new();
+        for i in 0..self.image_width {
+            let mut pixel_color = Color3::new(0.0, 0.0, 0.0);
+            for _ in 0..self.samples_per_pixel {
+                let r = self.get_ray(i, j, &mut rng);
+                pixel_color = pixel_color + Self::ray_color(&r, world, self.max_depth);
+            }
+            scan_line.push(pixel_color * self.pixel_samples_scale);
+        }
+        scan_line
+    }
     
     pub fn render(&self, world : &HittableList, path : &str) -> Result<(), Error>  {
+        let mut handles = vec![]; 
+        let lines : Vec<Vec<Color3>> = (0..self.image_height).map(|_| Vec::new()).collect(); 
+    
+        let results = Arc::new(Mutex::new(lines));
+        
+        println!("Creating a {} x {} image", self.image_width, self.image_height);
+        let total_lines = self.image_height;
+        let lines_left = Arc::new(Mutex::new(self.image_height));
+        for thread in 0..self.thread_num {
+            let cam_clone = self.clone();
+            let wor_clone = world.clone();
+            let results_clone = Arc::clone(&results);
+            let line_counter = Arc::clone(&lines_left);
+            let lines_per_thread = self.image_height / self.thread_num;
+            let lines_to_do = if thread == self.thread_num - 1 {self.image_height - (thread * lines_per_thread)} else {lines_per_thread};
+            let handle = thread::spawn(move || {
+                for j in 0..lines_to_do {
+                    let line_idx = lines_per_thread * thread + j;
+                    let scan_line = cam_clone.render_line(&wor_clone, line_idx);
+
+                    let mut lines_left = line_counter.lock().unwrap();
+                    *lines_left -= 1;
+                    write_progress(*lines_left, total_lines);
+
+                    let mut results = results_clone.lock().unwrap();
+                    results[line_idx as usize] = scan_line;
+                }             
+            });
+            handles.push(handle);
+        }
+        
+       
+        // Wait for all threads to complete
+        for handle in handles {
+            handle.join().unwrap();
+        }
+        let x = Arc::clone(&lines_left);
+        assert!(*(x.lock().unwrap()) == 0);
+
+        // Creates or overwrites the file
+        let mut file = File::create(path)?; 
+        // Write data as bytes
+        file.write_all(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes())?; 
+
+        let binding = Arc::clone(&results);
+        let pixels = binding.lock().unwrap();
+        for j in 0..self.image_height {
+            for i in 0..self.image_width {
+               let ju = j as usize;
+                let iu = i as usize;
+                pixels[ju][iu].writeln_color(&mut file)?;
+            }
+        } 
+        println!("\nDone!                   ");
+        Ok(())
+    }
+
+    /* pub fn render(&self, world : &HittableList, path : &str) -> Result<(), Error>  {
         let mut file = File::create(path)?; // Creates or overwrites the file
         // Write data as bytes
         file.write_all(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes())?;        
@@ -175,5 +254,5 @@ impl Camera {
         }
         println!("\nDone!                   ");
         Ok(())
-    }
+    } */
 }
