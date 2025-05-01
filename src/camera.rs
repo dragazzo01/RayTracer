@@ -1,6 +1,9 @@
 use crate::*;
 use std::thread;
 use std::sync::Mutex;
+use indicatif::{ProgressBar, ProgressStyle};
+use std::sync::Arc;
+//use std::time::Duration;
 
 pub struct CamArgs {
     pub aspect_ratio : f64,
@@ -180,27 +183,33 @@ impl Camera {
         let lines : Vec<Vec<Color3>> = (0..self.image_height).map(|_| Vec::new()).collect(); 
     
         let results = Arc::new(Mutex::new(lines));
+        let progress_bar = Arc::new(ProgressBar::new(self.image_height as u64));
+        progress_bar.set_style(
+            ProgressStyle::with_template(
+                "[{elapsed_precise}] [{eta_precise}] [{bar:40.green/red}] {pos}/{len} {msg}"
+            )
+            .unwrap()
+            .progress_chars("=>-"),
+        );
         
         println!("Creating a {} x {} image", self.image_width, self.image_height);
-        let total_lines = self.image_height;
-        let lines_left = Arc::new(Mutex::new(self.image_height));
+
         for thread in 0..self.thread_num {
-            let cam_clone = self.clone();
-            let wor_clone = world.clone();
-            let results_clone = Arc::clone(&results);
-            let line_counter = Arc::clone(&lines_left);
+            let progress_bar = Arc::clone(&progress_bar);
+            let camera = self.clone();
+            let world = world.clone();
+            let results = Arc::clone(&results);
+
             let lines_per_thread = self.image_height / self.thread_num;
             let lines_to_do = if thread == self.thread_num - 1 {self.image_height - (thread * lines_per_thread)} else {lines_per_thread};
             let handle = thread::spawn(move || {
                 for j in 0..lines_to_do {
                     let line_idx = lines_per_thread * thread + j;
-                    let scan_line = cam_clone.render_line(&wor_clone, line_idx);
+                    let scan_line = camera.render_line(&world, line_idx);
 
-                    let mut lines_left = line_counter.lock().unwrap();
-                    *lines_left -= 1;
-                    write_progress(*lines_left, total_lines);
+                    progress_bar.inc(1);
 
-                    let mut results = results_clone.lock().unwrap();
+                    let mut results = results.lock().unwrap();
                     results[line_idx as usize] = scan_line;
                 }             
             });
@@ -212,8 +221,8 @@ impl Camera {
         for handle in handles {
             handle.join().unwrap();
         }
-        let x = Arc::clone(&lines_left);
-        assert!(*(x.lock().unwrap()) == 0);
+
+        progress_bar.finish_with_message("All done!");
 
         // Creates or overwrites the file
         let mut file = File::create(path)?; 

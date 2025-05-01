@@ -1,5 +1,5 @@
 use crate::*;
-
+#[derive(Debug, Copy, Clone)]
 pub struct Ray {
     pub origin : Point3,
     pub direction : Vec3,

@@ -1,4 +1,5 @@
 use crate::*;
+#[derive(Debug, Copy, Clone)]
 pub struct Interval {
     pub min : f64,
     pub max : f64,

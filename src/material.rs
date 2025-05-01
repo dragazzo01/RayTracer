@@ -4,7 +4,7 @@ pub trait Material {
     fn scatter(&self, ray : &Ray, hit_record : &HitRecord) -> Option<(Color3, Ray)>;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Matte {
     _x : i32, 
 }
@@ -21,6 +21,7 @@ impl Matte {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Lambertian {
     albedo : Color3,
 }
@@ -48,6 +49,7 @@ impl Material for Lambertian {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Metal {
     albedo : Color3,
     fuzz : f64,
@@ -77,6 +79,7 @@ impl Material for Metal {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Dielectric {
     refraction_index : f64,
 }

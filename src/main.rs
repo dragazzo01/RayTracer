@@ -30,11 +30,12 @@ pub use material::*;
 
 
 fn main() -> Result<(), Error> {
-    //let _ = picture1();
-    let _ = picture2();
+    //_ = picture1();
+    _ = picture2();
     Ok(())
 }
 
+#[allow(dead_code)]
 fn picture1() -> Result<(), Error>  {
     let mat_ground = Lambertian::new(Color3::new(0.8, 0.8, 0.0));
     let mat_center = Lambertian::new(Color3::new(0.1, 0.2, 0.5));
@@ -67,6 +68,7 @@ fn picture1() -> Result<(), Error>  {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn picture2() -> Result<(), Error>  {
     let mut world = HittableList::empty();
     
@@ -127,7 +129,7 @@ fn picture2() -> Result<(), Error>  {
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(&world, "images/final1.ppm");
+    let _ = camera.render(&world, "images/temp.ppm");
     Ok(())
 }
 
