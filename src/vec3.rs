@@ -1,5 +1,4 @@
-use crate::*;
-use std::ops::*;
+use crate::prelude::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vec3 {
@@ -111,27 +110,25 @@ impl Vec3 {
         Self {x, y, z}
     }
 
-    pub fn random() -> Self {
-        let mut rng = rand::thread_rng();
+    pub fn random(rng : &mut ThreadRng) -> Self {
         Self {
-            x : gen_01(&mut rng),
-            y : gen_01(&mut rng),
-            z: gen_01(&mut rng),
+            x : gen_01(rng),
+            y : gen_01(rng),
+            z: gen_01(rng),
         }
     }
 
-    pub fn random_bound(min : f64, max : f64) -> Self {
-        let mut rng = rand::thread_rng();
+    pub fn random_bound(min : f64, max : f64, rng: &mut ThreadRng) -> Self {
         Self {
-            x : gen_bound(min, max, &mut rng),
-            y : gen_bound(min, max, &mut rng),
-            z: gen_bound(min, max, &mut rng),
+            x : crate::random::gen_bound(min, max, rng),
+            y : crate::random::gen_bound(min, max,rng),
+            z: crate::random::gen_bound(min, max, rng),
         }
     }
 
-    pub fn random_unit() -> Self {
+    pub fn random_unit(rng: &mut ThreadRng) -> Self {
         loop {
-            let canidate = Self::random_bound(-1.0, 1.0);
+            let canidate = Self::random_bound(-1.0, 1.0, rng);
             let norm = canidate.norm();
             if 1e-60 < norm && norm <= 1.0 {
                 return canidate.normalize();
@@ -139,8 +136,8 @@ impl Vec3 {
         }
     }
 
-    pub fn random_hemisphere(normal : &Self) -> Self {
-        let on_sphere = Self::random_unit();
+    pub fn random_hemisphere(normal : &Self, rng: &mut ThreadRng) -> Self {
+        let on_sphere = Self::random_unit(rng);
         if on_sphere.dot(normal) > 0.0 {
             on_sphere
         } else {
@@ -148,9 +145,13 @@ impl Vec3 {
         }
     }
 
-    pub fn random_disk() -> Self {
+    pub fn random_disk(rng: &mut ThreadRng) -> Self {
         loop {
-            let p = Self::new(random_bound(-1.0, 1.0), random_bound(-1.0, 1.0), 0.0);
+            let p = Self::new(
+                        crate::random::gen_bound(-1.0, 1.0, rng), 
+                        crate::random::gen_bound(-1.0, 1.0, rng), 
+                        0.0
+                    );
             if p.norm() < 1.0 {
                 return p;
             }

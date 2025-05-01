@@ -1,4 +1,5 @@
-use crate::*;
+use crate::prelude::*;
+
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
     pub origin : Point3,

@@ -1,9 +1,4 @@
-use crate::*;
-use std::thread;
-use std::sync::Mutex;
-use indicatif::{ProgressBar, ProgressStyle};
-use std::sync::Arc;
-//use std::time::Duration;
+use crate::prelude::*;
 
 pub struct CamArgs {
     pub aspect_ratio : f64,
@@ -121,7 +116,7 @@ impl Camera {
         }
     }
 
-    fn ray_color(ray : &Ray, world : &HittableList, depth : i32) -> Color3 {
+    fn ray_color(ray : &Ray, world : &HittableList, depth : i32, rng : &mut ThreadRng) -> Color3 {
         if depth <= 0 {
             return Color3::zero();
         }
@@ -129,10 +124,10 @@ impl Camera {
         match world.hit(ray, Interval::new(0.001, INF)) {
             None => (),
             Some(hr) => {
-                match hr.mat.scatter(ray, &hr) {
+                match hr.mat.scatter(ray, &hr, rng) {
                     None => return Color3::zero(),
                     Some((attenuation, scattered)) => 
-                        return attenuation * Self::ray_color(&scattered, world, depth - 1),
+                        return attenuation * Self::ray_color(&scattered, world, depth - 1, rng),
                 }
             },
         }
@@ -146,8 +141,8 @@ impl Camera {
         Vec3::new(gen_01(rng) - 0.5, gen_01(rng) - 0.5, 0.0)
     }
 
-    fn defocus_disk_sample(&self) -> Point3 {
-        let p = Vec3::random_disk();
+    fn defocus_disk_sample(&self, rng : &mut ThreadRng) -> Point3 {
+        let p = Vec3::random_disk(rng);
         self.center + (p.x * self.defocus_disk_u) + (p.y * self.defocus_disk_v)
     }
 
@@ -158,20 +153,19 @@ impl Camera {
                           + ((j as f64 + offset.y) * self.pixel_delta_v);
 
         let ray_origin = if self.defocus_angle <= 0. {self.center} 
-                         else {self.defocus_disk_sample()};
+                         else {self.defocus_disk_sample(rng)};
         let ray_direction = pixel_sample - ray_origin;
 
         Ray::new(ray_origin, ray_direction)
     }
 
-    fn render_line(&self, world : &HittableList, j : i32) -> Vec<Color3> {
-        let mut rng = rand::thread_rng();
+    fn render_line(&self, world : &HittableList, j : i32, rng : &mut ThreadRng) -> Vec<Color3> {
         let mut scan_line = Vec::new();
         for i in 0..self.image_width {
             let mut pixel_color = Color3::new(0.0, 0.0, 0.0);
             for _ in 0..self.samples_per_pixel {
-                let r = self.get_ray(i, j, &mut rng);
-                pixel_color = pixel_color + Self::ray_color(&r, world, self.max_depth);
+                let r = self.get_ray(i, j, rng);
+                pixel_color = pixel_color + Self::ray_color(&r, world, self.max_depth, rng);
             }
             scan_line.push(pixel_color * self.pixel_samples_scale);
         }
@@ -180,9 +174,7 @@ impl Camera {
     
     pub fn render(&self, world : &HittableList, path : &str) -> Result<(), Error>  {
         let mut handles = vec![]; 
-        let lines : Vec<Vec<Color3>> = (0..self.image_height).map(|_| Vec::new()).collect(); 
-    
-        let results = Arc::new(Mutex::new(lines));
+        
         let progress_bar = Arc::new(ProgressBar::new(self.image_height as u64));
         progress_bar.set_style(
             ProgressStyle::with_template(
@@ -198,28 +190,38 @@ impl Camera {
             let progress_bar = Arc::clone(&progress_bar);
             let camera = self.clone();
             let world = world.clone();
-            let results = Arc::clone(&results);
+            //let results = Arc::clone(&results);
 
             let lines_per_thread = self.image_height / self.thread_num;
-            let lines_to_do = if thread == self.thread_num - 1 {self.image_height - (thread * lines_per_thread)} else {lines_per_thread};
+            let lines_to_do = if thread == self.thread_num - 1 {
+                    self.image_height - (thread * lines_per_thread)
+                } else {
+                    lines_per_thread
+                };
+            
             let handle = thread::spawn(move || {
+                let mut rng = rand::thread_rng();
+                let mut local_results = Vec::with_capacity(lines_to_do as usize);
+
                 for j in 0..lines_to_do {
                     let line_idx = lines_per_thread * thread + j;
-                    let scan_line = camera.render_line(&world, line_idx);
+                    let scan_line = camera.render_line(&world, line_idx, &mut rng);
 
                     progress_bar.inc(1);
 
-                    let mut results = results.lock().unwrap();
-                    results[line_idx as usize] = scan_line;
-                }             
+                    local_results.push((line_idx, scan_line));
+                }   
+                local_results          
             });
             handles.push(handle);
         }
         
-       
+        let mut lines : Vec<Vec<Color3>> = vec![Vec::new(); self.image_height as usize];
         // Wait for all threads to complete
         for handle in handles {
-            handle.join().unwrap();
+            for (idx, line) in handle.join().unwrap() {
+                lines[idx as usize] = line;
+            }
         }
 
         progress_bar.finish_with_message("All done!");
@@ -229,8 +231,8 @@ impl Camera {
         // Write data as bytes
         file.write_all(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes())?; 
 
-        let binding = Arc::clone(&results);
-        let pixels = binding.lock().unwrap();
+        //let binding = Arc::clone(&results);
+        let pixels = lines;
         for j in 0..self.image_height {
             for i in 0..self.image_width {
                let ju = j as usize;
@@ -238,30 +240,7 @@ impl Camera {
                 pixels[ju][iu].writeln_color(&mut file)?;
             }
         } 
-        println!("\nDone!                   ");
+        println!("\nDone!");
         Ok(())
     }
-
-    /* pub fn render(&self, world : &HittableList, path : &str) -> Result<(), Error>  {
-        let mut file = File::create(path)?; // Creates or overwrites the file
-        // Write data as bytes
-        file.write_all(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes())?;        
-
-        let mut rng = rand::thread_rng();
-        println!("Creating a {} x {} image", self.image_width, self.image_height);
-        for j in 0..self.image_height {
-            write_progress(self.image_height - j, self.image_height);
-            for i in 0..self.image_width {
-                let mut pixel_color = Color3::new(0.0, 0.0, 0.0);
-                for _ in 0..self.samples_per_pixel {
-                    let r = self.get_ray(i, j, &mut rng);
-                    pixel_color = pixel_color + Self::ray_color(&r, &world, self.max_depth);
-                }
-                pixel_color = pixel_color * self.pixel_samples_scale;
-                pixel_color.writeln_color(&mut file)?;
-            }
-        }
-        println!("\nDone!                   ");
-        Ok(())
-    } */
 }

@@ -1,21 +1,23 @@
-use crate::*;
+use crate::prelude::*;
 
 pub trait Material {
-    fn scatter(&self, ray : &Ray, hit_record : &HitRecord) -> Option<(Color3, Ray)>;
+    fn scatter(&self, ray : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)>;
 }
 
 #[derive(Debug, Copy, Clone)]
+
 pub struct Matte {
     _x : i32, 
 }
 
 impl Material for Matte {
-    fn scatter(&self, _ray : &Ray, _hit_record : &HitRecord) -> Option<(Color3, Ray)> {
+    fn scatter(&self, _ray : &Ray, _hit_record : &HitRecord, _rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
         None
     }
 }
 
 impl Matte {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {_x : 0}
     }
@@ -33,9 +35,9 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter (&self, _ray : &Ray, hit_record : &HitRecord) -> Option<(Color3, Ray)> {
+    fn scatter (&self, _ray : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
         let scatter_direction = {
-            let res = hit_record.normal + Vec3::random_unit();
+            let res = hit_record.normal + Vec3::random_unit(rng);
             if res.near_zero() {
                 hit_record.normal
             } else {
@@ -63,10 +65,10 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter (&self, ray_in : &Ray, hit_record : &HitRecord) -> Option<(Color3, Ray)> {
+    fn scatter (&self, ray_in : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
         let reflected = 
             ray_in.direction.reflect(&hit_record.normal).normalize() 
-            + self.fuzz * Vec3::random_unit();
+            + self.fuzz * Vec3::random_unit(rng);
         let scattered = Ray::new(hit_record.point, reflected);
 
 
@@ -97,7 +99,7 @@ fn reflectance(cosine : f64, refraction_index : f64) -> f64 {
 }
 
 impl Material for Dielectric {
-    fn scatter (&self, ray_in : &Ray, hit_record : &HitRecord) -> Option<(Color3, Ray)> {
+    fn scatter (&self, ray_in : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
         let ri = if hit_record.front_face {1.0 / self.refraction_index} else {self.refraction_index};
         let unit_direction = ray_in.direction.normalize();
     
@@ -105,7 +107,7 @@ impl Material for Dielectric {
         let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
 
         let direction = 
-        if ri * sin_theta > 1.0 || reflectance(cos_theta, ri) > random_01() {
+        if ri * sin_theta > 1.0 || reflectance(cos_theta, ri) > gen_01(rng) {
             unit_direction.reflect(&hit_record.normal)
         } else {
             unit_direction.refract(&hit_record.normal, ri)

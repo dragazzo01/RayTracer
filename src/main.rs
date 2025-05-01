@@ -1,4 +1,4 @@
-//use std::fs::File;
+mod prelude;
 mod vec3;
 mod ray;
 mod hittable;
@@ -8,35 +8,19 @@ mod camera;
 mod random;
 mod material;
 
-//std inserts
-pub use std::io::{Write, Error};
-pub use std::sync::Arc;
-pub use std::fs::File;
-
-//rand
-pub use rand::rngs::ThreadRng;
-pub use rand::Rng;
-
-//internal
-pub use vec3::*;
-pub use ray::Ray;
-pub use hittable::*;
-pub use interval::Interval;
-pub use camera::*;
-pub use random::*;
-pub use constants::*;
-pub use material::*;
+use crate::prelude::*;
 
 
 
 fn main() -> Result<(), Error> {
-    //_ = picture1();
-    _ = picture2();
+    _ = picture1();
+    //_ = picture2();
     Ok(())
 }
 
 #[allow(dead_code)]
 fn picture1() -> Result<(), Error>  {
+
     let mat_ground = Lambertian::new(Color3::new(0.8, 0.8, 0.0));
     let mat_center = Lambertian::new(Color3::new(0.1, 0.2, 0.5));
     let mat_left = Dielectric::new(1.50);
@@ -61,7 +45,7 @@ fn picture1() -> Result<(), Error>  {
         v_up : Vec3::new(0., 1., 0.),
         defocus_angle : 0.,
         focus_dist : 10.,
-        thread_num : 4,
+        thread_num : 2,
     };
     let camera = Camera::initilize(args);
     let _ = camera.render(&world, "images/temp.ppm");
@@ -85,13 +69,13 @@ fn picture2() -> Result<(), Error>  {
             if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
                     //diffuse
-                    let albedo = Color3::random() * Color3::random();
+                    let albedo = Color3::random(&mut rng) * Color3::random(&mut rng);
                     let mat = Lambertian::new(albedo);
                     world.add(Arc::new(Sphere::new(center, 0.2, mat)));
 
                 } else if choose_mat < 0.95 {
                     //metal
-                    let albedo = Color3::random_bound(0.5, 1.0);
+                    let albedo = Color3::random_bound(0.5, 1.0, &mut rng);
                     let fuzz = gen_bound(0.0, 0.5, &mut rng);
                     let mat = Metal::new(albedo, fuzz);
                     world.add(Arc::new(Sphere::new(center, 0.2, mat)));

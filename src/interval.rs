@@ -1,14 +1,17 @@
-use crate::*;
+use crate::prelude::*;
+
 #[derive(Debug, Copy, Clone)]
 pub struct Interval {
     pub min : f64,
     pub max : f64,
 }
 
+#[allow(dead_code)]
 impl Interval {
     pub fn new(min : f64, max : f64) -> Self {
         Self {min, max}
     }
+
 
     pub fn universe() -> Self {
         Self {
