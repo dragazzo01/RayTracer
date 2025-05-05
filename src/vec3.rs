@@ -1,5 +1,13 @@
 use crate::prelude::*;
 
+use std::ops::{
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Index
+};
+
 #[derive(Debug, Copy, Clone)]
 pub struct Vec3 {
     pub x : f64,

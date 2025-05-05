@@ -1,50 +1,39 @@
 mod prelude;
 mod vec3;
 mod ray;
-mod hittable;
+mod hittables;
 mod constants;
 mod interval;
 mod camera;
 mod random;
-mod material;
+mod materials;
 
 use crate::prelude::*;
-//use pprof::ProfilerGuardBuilder;
+use crate::camera::{CamArgs, Camera};
 
 
 
-fn main() -> Result<(), Error> {
-    // let guard = pprof::ProfilerGuardBuilder::default()
-    //             .frequency(100)
-    //             .blocklist(&["libc", "libgcc", "pthread", "vdso", "perf"])
-    //             .build()
-    //             .unwrap();
-                
-    //_ = picture1();
-    _ = picture2();
-    // if let Ok(report) = guard.report().build() {
-    //     let file = std::fs::File::create("flamegraph.svg").unwrap();
-    //     report.flamegraph(file).unwrap();
-    // }
-
+fn main() -> Result<(), Error> {              
+    _ = picture1();
+    //_ = picture2();
     Ok(())
 }
 
 #[allow(dead_code)]
 fn picture1() -> Result<(), Error>  {
 
-    let mat_ground = Lambertian::new(Color3::new(0.8, 0.8, 0.0));
-    let mat_center = Lambertian::new(Color3::new(0.1, 0.2, 0.5));
-    let mat_left = Dielectric::new(1.50);
-    let mat_bubble = Dielectric::new(1.00 / 1.50);
-    let mat_right = Metal::new(Color3::new(0.8, 0.6, 0.2), 1.0);
+    let mat_ground = Materials::lambertian(Color3::new(0.8, 0.8, 0.0));
+    let mat_center = Materials::lambertian(Color3::new(0.1, 0.2, 0.5));
+    let mat_left = Materials::dielectric(1.50);
+    let mat_bubble = Materials::dielectric(1.00 / 1.50);
+    let mat_right = Materials::metal(Color3::new(0.8, 0.6, 0.2), 1.0);
 
     let mut world = HittableList::empty();
-    world.add(Sphere::new(Vec3::new( 0.0, -100.5, -1.0), 100.0, mat_ground));
-    world.add(Sphere::new(Vec3::new( 0.0,    0.0, -1.2),   0.5, mat_center));
-    world.add(Sphere::new(Vec3::new(-1.0,    0.0, -1.0),   0.5, mat_left));
-    world.add(Sphere::new(Vec3::new(-1.0,    0.0, -1.0),   0.4, mat_bubble));
-    world.add(Sphere::new(Vec3::new( 1.0,    0.0, -1.0),   0.5, mat_right));
+    world.add_sphere(Vec3::new( 0.0, -100.5, -1.0), 100.0, mat_ground);
+    world.add_sphere(Vec3::new( 0.0,    0.0, -1.2),   0.5, mat_center);
+    world.add_sphere(Vec3::new(-1.0,    0.0, -1.0),   0.5, mat_left);
+    world.add_sphere(Vec3::new(-1.0,    0.0, -1.0),   0.4, mat_bubble);
+    world.add_sphere(Vec3::new( 1.0,    0.0, -1.0),   0.5, mat_right);
 
     let args = CamArgs {
         aspect_ratio : 16. / 9.,
@@ -68,9 +57,8 @@ fn picture1() -> Result<(), Error>  {
 fn picture2() -> Result<(), Error>  {
     let mut world = HittableList::empty();
     
-    let mat_ground = Lambertian::new(Color3::new(0.5, 0.5, 0.5));
-    let ground = Sphere::new(Point3::new(0.0, -1000.0, 0.0), 1000.0, mat_ground);
-    world.add(ground);
+    let mat_ground = Materials::lambertian(Color3::new(0.5, 0.5, 0.5));
+    world.add_sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0, mat_ground);
 
     let mut rng = rand::thread_rng();
     for a in -11..11 {
@@ -82,32 +70,32 @@ fn picture2() -> Result<(), Error>  {
                 if choose_mat < 0.8 {
                     //diffuse
                     let albedo = Color3::random(&mut rng) * Color3::random(&mut rng);
-                    let mat = Lambertian::new(albedo);
-                    world.add(Sphere::new(center, 0.2, mat));
+                    let mat = Materials::lambertian(albedo);
+                    world.add_sphere(center, 0.2, mat);
 
                 } else if choose_mat < 0.95 {
                     //metal
                     let albedo = Color3::random_bound(0.5, 1.0, &mut rng);
                     let fuzz = gen_bound(0.0, 0.5, &mut rng);
-                    let mat = Metal::new(albedo, fuzz);
-                    world.add(Sphere::new(center, 0.2, mat));
+                    let mat = Materials::metal(albedo, fuzz);
+                    world.add_sphere(center, 0.2, mat);
                 } else {
                     //glass
-                    let mat = Dielectric::new(1.5);
-                    world.add(Sphere::new(center, 0.2, mat));
+                    let mat = Materials::dielectric(1.5);
+                    world.add_sphere(center, 0.2, mat);
                 }
             }
         }
     }
 
-    let mat1 = Dielectric::new(1.5);
-    world.add(Sphere::new(Point3::new(0.0, 1.0, 0.0), 1.0, mat1));
+    let mat1 = Materials::dielectric(1.5);
+    world.add_sphere(Point3::new(0.0, 1.0, 0.0), 1.0, mat1);
     
-    let mat2 = Lambertian::new(Color3::new(0.4, 0.2, 0.1));
-    world.add(Sphere::new(Point3::new(-4.0, 1.0, 0.0), 1.0, mat2));
+    let mat2 = Materials::lambertian(Color3::new(0.4, 0.2, 0.1));
+    world.add_sphere(Point3::new(-4.0, 1.0, 0.0), 1.0, mat2);
 
-    let mat3 = Metal::new(Color3::new(0.7, 0.6, 0.5), 0.0);
-    world.add(Sphere::new(Point3::new(4.0, 1.0, 0.0), 1.0, mat3));
+    let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
+    world.add_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
 
     let args = CamArgs {
@@ -121,7 +109,7 @@ fn picture2() -> Result<(), Error>  {
         v_up : Vec3::new(0., 1., 0.),
         defocus_angle : 0.6,
         focus_dist : 10.,
-        thread_num : 1,
+        thread_num : 8,
     };
 
     let camera = Camera::initilize(args);

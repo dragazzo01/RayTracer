@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::sync::Arc;
 
 pub struct CamArgs {
     pub aspect_ratio : f64,
@@ -140,7 +141,9 @@ impl Camera {
                          else {self.defocus_disk_sample(rng)};
         let ray_direction = pixel_sample - ray_origin;
 
-        Ray::new(ray_origin, ray_direction)
+        let ray_time = gen_01(rng);
+
+        Ray::new_time(ray_origin, ray_direction, ray_time)
     }
 
     fn render_line(&self, world : &HittableList, j : usize, rng : &mut ThreadRng) -> Vec<Color3> {
@@ -195,7 +198,7 @@ impl Camera {
 
                     local_results.push((line_idx, scan_line));
                 }   
-                println!("Thread {} finished", thread);
+                //println!("Thread {} finished", thread);
                 local_results    
             });
             handles.push(handle);
