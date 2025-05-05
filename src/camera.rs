@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 pub struct CamArgs {
     pub aspect_ratio : f64,
-    pub image_width : i32,
+    pub image_width : usize,
     pub samples_per_pixel : i32,
     pub max_depth : i32,
     pub vfov : f64,
@@ -11,16 +11,15 @@ pub struct CamArgs {
     pub v_up : Vec3,
     pub defocus_angle : f64,
     pub focus_dist : f64,
-    pub thread_num : i32,
+    pub thread_num : usize,
 }
 
 #[derive(Clone)]
 pub struct Camera {
     samples_per_pixel : i32,
-    //aspect_ratio : f64, 
     max_depth : i32,
-    image_width : i32,
-    image_height : i32,
+    image_width : usize,
+    image_height : usize,
     pixel_samples_scale : f64,
     center : Point3,
     pixel00_loc : Point3,
@@ -29,14 +28,7 @@ pub struct Camera {
     defocus_angle : f64,
     defocus_disk_u : Vec3,
     defocus_disk_v : Vec3,
-    thread_num : i32,
-    //look_from : Point3,
-    //look_at : Point3,
-    //v_up : Vec3,
-    //u : Vec3,
-    //v : Vec3,
-    //w : Vec3,
-    //vfov : f64,
+    thread_num : usize,
 }
 
 impl Camera {
@@ -54,7 +46,7 @@ impl Camera {
         let thread_num = args.thread_num;
 
 
-        let image_height = (image_width as f64 / aspect_ratio) as i32;
+        let image_height = (image_width as f64 / aspect_ratio) as usize;
         let image_height = if image_height < 1 {1} else {image_height};
 
         let pixel_samples_scale = 1.0 / samples_per_pixel as f64;
@@ -93,7 +85,6 @@ impl Camera {
 
         Self {
             samples_per_pixel,
-            //aspect_ratio,
             max_depth,
             image_width,
             image_height,
@@ -106,13 +97,6 @@ impl Camera {
             defocus_disk_u,
             defocus_disk_v,
             thread_num,
-            //look_from,
-            //look_at,
-            //v_up,
-            //u,
-            //v,
-            //w,
-            //vfov,
         }
     }
 
@@ -146,7 +130,7 @@ impl Camera {
         self.center + (p.x * self.defocus_disk_u) + (p.y * self.defocus_disk_v)
     }
 
-    fn get_ray(&self, i : i32, j : i32, rng : &mut ThreadRng) -> Ray {
+    fn get_ray(&self, i : usize, j : usize, rng : &mut ThreadRng) -> Ray {
         let offset = Self::sample_square(rng);
         let pixel_sample = self.pixel00_loc
                           + ((i as f64 + offset.x) * self.pixel_delta_u)
@@ -159,7 +143,7 @@ impl Camera {
         Ray::new(ray_origin, ray_direction)
     }
 
-    fn render_line(&self, world : &HittableList, j : i32, rng : &mut ThreadRng) -> Vec<Color3> {
+    fn render_line(&self, world : &HittableList, j : usize, rng : &mut ThreadRng) -> Vec<Color3> {
         let mut scan_line = Vec::new();
         for i in 0..self.image_width {
             let mut pixel_color = Color3::new(0.0, 0.0, 0.0);
@@ -201,7 +185,7 @@ impl Camera {
             
             let handle = thread::spawn(move || {
                 let mut rng = rand::thread_rng();
-                let mut local_results = Vec::with_capacity(lines_to_do as usize);
+                let mut local_results = Vec::with_capacity(lines_to_do);
 
                 for j in 0..lines_to_do {
                     let line_idx = lines_per_thread * thread + j;
@@ -211,36 +195,34 @@ impl Camera {
 
                     local_results.push((line_idx, scan_line));
                 }   
-                local_results          
+                println!("Thread {} finished", thread);
+                local_results    
             });
             handles.push(handle);
         }
         
-        let mut lines : Vec<Vec<Color3>> = vec![Vec::new(); self.image_height as usize];
+        let mut lines : Vec<Vec<Color3>> = vec![Vec::new(); self.image_height];
         // Wait for all threads to complete
         for handle in handles {
             for (idx, line) in handle.join().unwrap() {
-                lines[idx as usize] = line;
+                lines[idx] = line;
             }
         }
 
         progress_bar.finish_with_message("All done!");
 
         // Creates or overwrites the file
+        println!("Writing to File");
         let mut file = File::create(path)?; 
         // Write data as bytes
         file.write_all(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes())?; 
 
-        //let binding = Arc::clone(&results);
-        let pixels = lines;
         for j in 0..self.image_height {
             for i in 0..self.image_width {
-               let ju = j as usize;
-                let iu = i as usize;
-                pixels[ju][iu].writeln_color(&mut file)?;
+                lines[j][i].writeln_color(&mut file)?;
             }
         } 
-        println!("\nDone!");
+        println!("Done!");
         Ok(())
     }
 }

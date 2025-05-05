@@ -1,11 +1,29 @@
 use crate::prelude::*;
 
+#[derive(Debug, Copy, Clone)]
+pub enum Materials {
+    Matte(Matte),
+    Lambertian(Lambertian),
+    Dielectric(Dielectric),
+    Metal(Metal),
+}
+
+impl Material for Materials {
+    fn scatter(&self, ray : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
+        match self {
+            Materials::Matte(m) => m.scatter(ray, hit_record, rng),
+            Materials::Lambertian(l) => l.scatter(ray, hit_record, rng),
+            Materials::Dielectric(d) => d.scatter(ray, hit_record, rng),
+            Materials::Metal(m) => m.scatter(ray, hit_record, rng),
+        }
+    }
+}
+
 pub trait Material {
     fn scatter(&self, ray : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)>;
 }
 
 #[derive(Debug, Copy, Clone)]
-
 pub struct Matte {
     _x : i32, 
 }
@@ -18,8 +36,8 @@ impl Material for Matte {
 
 impl Matte {
     #[allow(dead_code)]
-    pub fn new() -> Self {
-        Self {_x : 0}
+    pub fn new() -> Materials {
+        Materials::Matte(Self {_x : 0})
     }
 }
 
@@ -29,8 +47,8 @@ pub struct Lambertian {
 }
 
 impl Lambertian {
-    pub fn new(albedo : Color3) -> Self {
-        Self {albedo}
+    pub fn new(albedo : Color3) -> Materials {
+        Materials::Lambertian(Self {albedo})
     }
 }
 
@@ -58,9 +76,9 @@ pub struct Metal {
 }
 
 impl Metal {
-    pub fn new(albedo : Color3, fuzz : f64) -> Self {
+    pub fn new(albedo : Color3, fuzz : f64) -> Materials {
         let fuzz = if fuzz < 1.0 {fuzz} else {1.0};
-        Self {albedo, fuzz}
+        Materials::Metal(Self {albedo, fuzz})
     }
 }
 
@@ -87,8 +105,8 @@ pub struct Dielectric {
 }
 
 impl Dielectric {
-    pub fn new(refraction_index : f64) -> Self {
-        Self {refraction_index}
+    pub fn new(refraction_index : f64) -> Materials {
+        Materials::Dielectric(Self {refraction_index})
     }
 }
 

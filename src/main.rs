@@ -9,12 +9,24 @@ mod random;
 mod material;
 
 use crate::prelude::*;
+//use pprof::ProfilerGuardBuilder;
 
 
 
 fn main() -> Result<(), Error> {
-    _ = picture1();
-    //_ = picture2();
+    // let guard = pprof::ProfilerGuardBuilder::default()
+    //             .frequency(100)
+    //             .blocklist(&["libc", "libgcc", "pthread", "vdso", "perf"])
+    //             .build()
+    //             .unwrap();
+                
+    //_ = picture1();
+    _ = picture2();
+    // if let Ok(report) = guard.report().build() {
+    //     let file = std::fs::File::create("flamegraph.svg").unwrap();
+    //     report.flamegraph(file).unwrap();
+    // }
+
     Ok(())
 }
 
@@ -28,15 +40,15 @@ fn picture1() -> Result<(), Error>  {
     let mat_right = Metal::new(Color3::new(0.8, 0.6, 0.2), 1.0);
 
     let mut world = HittableList::empty();
-    world.add(Arc::new(Sphere::new(Vec3::new( 0.0, -100.5, -1.0), 100.0, mat_ground)));
-    world.add(Arc::new(Sphere::new(Vec3::new( 0.0,    0.0, -1.2),   0.5, mat_center)));
-    world.add(Arc::new(Sphere::new(Vec3::new(-1.0,    0.0, -1.0),   0.5, mat_left)));
-    world.add(Arc::new(Sphere::new(Vec3::new(-1.0,    0.0, -1.0),   0.4, mat_bubble)));
-    world.add(Arc::new(Sphere::new(Vec3::new( 1.0,    0.0, -1.0),   0.5, mat_right)));
+    world.add(Sphere::new(Vec3::new( 0.0, -100.5, -1.0), 100.0, mat_ground));
+    world.add(Sphere::new(Vec3::new( 0.0,    0.0, -1.2),   0.5, mat_center));
+    world.add(Sphere::new(Vec3::new(-1.0,    0.0, -1.0),   0.5, mat_left));
+    world.add(Sphere::new(Vec3::new(-1.0,    0.0, -1.0),   0.4, mat_bubble));
+    world.add(Sphere::new(Vec3::new( 1.0,    0.0, -1.0),   0.5, mat_right));
 
     let args = CamArgs {
         aspect_ratio : 16. / 9.,
-        image_width : 400,
+        image_width : 800,
         samples_per_pixel : 100,
         max_depth : 50,
         vfov : 90.,
@@ -45,7 +57,7 @@ fn picture1() -> Result<(), Error>  {
         v_up : Vec3::new(0., 1., 0.),
         defocus_angle : 0.,
         focus_dist : 10.,
-        thread_num : 2,
+        thread_num : 4,
     };
     let camera = Camera::initilize(args);
     let _ = camera.render(&world, "images/temp.ppm");
@@ -58,7 +70,7 @@ fn picture2() -> Result<(), Error>  {
     
     let mat_ground = Lambertian::new(Color3::new(0.5, 0.5, 0.5));
     let ground = Sphere::new(Point3::new(0.0, -1000.0, 0.0), 1000.0, mat_ground);
-    world.add(Arc::new(ground));
+    world.add(ground);
 
     let mut rng = rand::thread_rng();
     for a in -11..11 {
@@ -71,31 +83,31 @@ fn picture2() -> Result<(), Error>  {
                     //diffuse
                     let albedo = Color3::random(&mut rng) * Color3::random(&mut rng);
                     let mat = Lambertian::new(albedo);
-                    world.add(Arc::new(Sphere::new(center, 0.2, mat)));
+                    world.add(Sphere::new(center, 0.2, mat));
 
                 } else if choose_mat < 0.95 {
                     //metal
                     let albedo = Color3::random_bound(0.5, 1.0, &mut rng);
                     let fuzz = gen_bound(0.0, 0.5, &mut rng);
                     let mat = Metal::new(albedo, fuzz);
-                    world.add(Arc::new(Sphere::new(center, 0.2, mat)));
+                    world.add(Sphere::new(center, 0.2, mat));
                 } else {
                     //glass
                     let mat = Dielectric::new(1.5);
-                    world.add(Arc::new(Sphere::new(center, 0.2, mat)));
+                    world.add(Sphere::new(center, 0.2, mat));
                 }
             }
         }
     }
 
     let mat1 = Dielectric::new(1.5);
-    world.add(Arc::new(Sphere::new(Point3::new(0.0, 1.0, 0.0), 1.0, mat1)));
+    world.add(Sphere::new(Point3::new(0.0, 1.0, 0.0), 1.0, mat1));
     
     let mat2 = Lambertian::new(Color3::new(0.4, 0.2, 0.1));
-    world.add(Arc::new(Sphere::new(Point3::new(-4.0, 1.0, 0.0), 1.0, mat2)));
+    world.add(Sphere::new(Point3::new(-4.0, 1.0, 0.0), 1.0, mat2));
 
     let mat3 = Metal::new(Color3::new(0.7, 0.6, 0.5), 0.0);
-    world.add(Arc::new(Sphere::new(Point3::new(4.0, 1.0, 0.0), 1.0, mat3)));
+    world.add(Sphere::new(Point3::new(4.0, 1.0, 0.0), 1.0, mat3));
 
 
     let args = CamArgs {
@@ -109,7 +121,7 @@ fn picture2() -> Result<(), Error>  {
         v_up : Vec3::new(0., 1., 0.),
         defocus_angle : 0.6,
         focus_dist : 10.,
-        thread_num : 4,
+        thread_num : 1,
     };
 
     let camera = Camera::initilize(args);

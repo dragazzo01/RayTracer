@@ -1,14 +1,27 @@
 use crate::prelude::*;
 
-pub struct HitRecord<'a> {
+pub struct HitRecord {
     pub point : Point3,
     pub normal : Vec3,
     pub t : f64,
-    pub mat :Arc<&'a dyn Material>,
+    pub mat : Materials,
     pub front_face : bool,
 }
 
-impl HitRecord<'_> {
+#[derive(Debug, Copy, Clone)]
+pub enum Hittables {
+    Sphere(Sphere),
+}
+
+impl Hittable for Hittables {
+    fn hit(&self, ray : &Ray, interval : Interval) -> Option<HitRecord> {
+        match self {
+            Hittables::Sphere(s) => s.hit(ray, interval),
+        }
+    }
+}
+
+impl HitRecord {
     fn set_face_normal(&mut self, ray : &Ray, outward_normal : &Vec3) {
         self.front_face = ray.direction.dot(outward_normal) < 0.0;
         self.normal = if self.front_face {*outward_normal} else {-1.0 * *outward_normal}
@@ -19,20 +32,21 @@ pub trait Hittable : Send + Sync {
     fn hit(&self, ray : &Ray, interval : Interval) -> Option<HitRecord>;
 }
 
-pub struct Sphere<T : Material> {
+#[derive(Debug, Copy, Clone)]
+pub struct Sphere {
     pub center : Point3,
     pub radius : f64,
-    mat : T,
+    mat : Materials,
     
 }
 
-impl<T : Material + std::marker::Sync + std::marker::Send> Sphere<T> {
-    pub fn new(center : Point3, radius : f64, mat : T) -> Self {
-        Sphere {center, radius, mat}
+impl Sphere {
+    pub fn new(center : Point3, radius : f64, mat : Materials) -> Hittables {
+        Hittables::Sphere(Self {center, radius, mat})
     }
 }
 
-impl<T : Material + std::marker::Sync + std::marker::Send> Hittable for Sphere<T> {
+impl Hittable for Sphere {
     fn hit(&self, ray : &Ray, interval : Interval) -> Option<HitRecord> {
         //determine if ray hits sphere 
         let oc = self.center - ray.origin;
@@ -58,15 +72,16 @@ impl<T : Material + std::marker::Sync + std::marker::Send> Hittable for Sphere<T
         let point = ray.at(root);
         let normal = (point - self.center) / self.radius;
 
-        let mut res = HitRecord {point, normal, t, mat : Arc::new(&self.mat), front_face : false};
+        let mut res = HitRecord {point, normal, t, mat : self.mat, front_face : false};
         res.set_face_normal(ray, &normal);
         Some(res)
     }
 }
 
-#[derive(Clone)]
+//#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct HittableList {
-    objects : Vec<Arc<dyn Hittable>>,
+    objects : Vec<Hittables>,
 }
 
 impl HittableList {
@@ -78,7 +93,7 @@ impl HittableList {
         Self {objects : vec![object]}
     } */
 
-    pub fn add(&mut self, object : Arc<dyn Hittable>) {
+    pub fn add(&mut self, object : Hittables) {
         self.objects.push(object);
     }
 

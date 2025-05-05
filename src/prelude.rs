@@ -14,8 +14,8 @@ pub use std::ops::{
 };
 
 //internal
-pub use crate::vec3::*;
-pub use crate::ray::*;
+pub use crate::vec3::{Vec3, Color3, Point3};
+pub use crate::ray::Ray;
 pub use crate::hittable::*;
 pub use crate::interval::*;
 pub use crate::camera::*;
