@@ -1,62 +1,123 @@
-use crate::prelude::*;
-use crate::hittables::hittables::Hittables;
-use crate::hittables::aabb::AABB;
+use std::cmp::Ordering;
 
-#[derive(Debug, Copy, Clone)]
-pub struct BVHNode{
-    left : Hittables,
-    right : Hittables,
-    pub bbox : AABB,
+use crate::prelude::*;
+use crate::hittables::hittables::{Hittables, HittableList};
+use crate::hittables::aabb::AABB;
+//use std::
+
+#[derive(Debug, Clone)]
+pub enum BVHNode {
+    Leaf(Hittables, AABB),
+    Node {
+        left : Box<BVHNode>,
+        right : Box<BVHNode>,
+        bbox : AABB,
+    }, 
+    
 }
 
 impl BVHNode {
-    pub fn new(objects : &Vec<Hittables>, start : usize, end : usize, rng : &mut ThreadRng) -> Self {
+    pub fn new(objects : &mut Vec<Hittables>, start : usize, end : usize, rng : &mut ThreadRng) -> Self {
         let axis = gen_int(0, 2, rng);
 
         let comparator = match axis {
-            0 => panic!("unreachable"),
-            1 => panic!("unreachable"),
-            2 => panic!("unreachable"),
+            0 => Self::box_compare_x,
+            1 => Self::box_compare_y,
+            2 => Self::box_compare_z,
             _ => panic!("unreachable"),
         };
 
         let span = end - start;
         
-        let (left, right) = match span {
-            1 => (objects[start], objects[start]),
-            2 => (objects[start], objects[start+1]),
+        match span {
+            1 => {
+                Self::Leaf(objects[start], objects[start].bounding_box())
+            },
+            2 => {
+                let left = objects[start];
+                let right = objects[start+1];
+
+                let bbox = AABB::from_boxes(left.bounding_box(), right.bounding_box());
+                
+                let left = Box::new(Self::Leaf(left, left.bounding_box()));
+                let right = Box::new(Self::Leaf(right, right.bounding_box()));
+
+                
+                Self::Node {left, right, bbox}
+            },
             _ => {   
                 objects[start..end].sort_by(comparator);
     
                 let mid = start + span/2;
     
-                (Hittables::new_node(objects, start, mid), Hittables::new_node(objects, mid, start))
-            },
-        };
-
-        let bbox = AABB::from_boxes(left.bounding_box, right.bounding_box);
-
-        Self {left, right, bbox}
-
+                let left = Box::new(Self::new(objects, start, mid, rng));
+                let right = Box::new(Self::new(objects, mid, end, rng));
+                let bbox = AABB::from_boxes(left.bounding_box(), right.bounding_box());
+                Self::Node { left, right, bbox }
+            }
+        }
     }
 
-    pub fn from_list(list : &HittableList) -> Self {
-        Self::new(&list.objects, 0, list.objects.size)
+    pub fn from_list(list : &mut HittableList, rng : &mut ThreadRng) -> Self {
+        let len = list.objects.len();
+        Self::new(&mut list.objects, 0, len, rng)
+    }
+
+    fn box_compare(a : &Hittables, b : &Hittables, axis : i32) -> Ordering {
+        let a_axis_interval = a.bounding_box().axis_interval(axis);
+        let b_axis_interval = b.bounding_box().axis_interval(axis);
+        
+        if a_axis_interval.min < b_axis_interval.min {Ordering::Less}
+        else {Ordering::Greater}
+    }
+
+    fn box_compare_x(a : &Hittables, b : &Hittables) -> Ordering {
+        Self::box_compare(a, b, 0)
+    }
+
+    fn box_compare_y(a : &Hittables, b : &Hittables) -> Ordering {
+        Self::box_compare(a, b, 1)
+    }
+
+    fn box_compare_z(a : &Hittables, b : &Hittables) -> Ordering {
+        Self::box_compare(a, b, 2)
+    }
+
+    pub fn bounding_box(&self) -> AABB {
+        match self {
+            Self::Leaf(_, bbox) => *bbox,
+            Self::Node {left : _, right : _, bbox } => *bbox,
+        }
     }
 
     pub fn hit(&self, ray : &Ray, ray_t : Interval) -> Option<HitRecord> {
-        if self.bbox.hit(ray, ray_t).is_none() {return None;};
+        if self.bounding_box().hit(ray).is_none() {return None;};
 
-        let hit_left = self.left.hit(ray, ray_t);
-        let new_t = match hit_left {
-            None => ray_t,
-            Some(hr) => Interval::new(ray_t.min, hr.t)
-        };
-        let hit_right = self.right.hit(ray, new_t);
+        match self {
+            Self::Leaf(object, _) => object.hit(ray, ray_t),
+            Self::Node{left, right, ..} => {
+                let mut final_hit_record = None;
+                let mut closest_so_far = ray_t.max;
 
-        match hit_right {
-            None => hit_left,
-            Some(hr) => hit_right
+                
+                match left.hit(ray, Interval::new(ray_t.min, closest_so_far)) {
+                    Some(hr) => {
+                        closest_so_far = hr.t;
+                        final_hit_record = Some(hr);
+                    },
+                    None => (),
+                }
+
+                match right.hit(ray, Interval::new(ray_t.min, closest_so_far)) {
+                    Some(hr) => {
+                        final_hit_record = Some(hr);
+                    },
+                    None => (),
+                }
+
+                final_hit_record
+            }
         }
+        
     }
 }

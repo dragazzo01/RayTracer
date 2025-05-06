@@ -8,8 +8,17 @@ pub struct AABB {
 }
 
 impl AABB {
+    #[allow(dead_code)]
     pub fn new(x : Interval, y : Interval, z : Interval) -> Self {
         Self {x, y, z}
+    }
+
+    pub fn universe() -> Self {
+        Self {
+            x : Interval::universe(),
+            y : Interval::universe(),
+            z : Interval::universe(),
+        }
     }
 
     pub fn from_points(a : Point3, b : Point3) -> Self {
@@ -19,7 +28,7 @@ impl AABB {
         Self {x, y, z}
     }
 
-    pub fn from_boxes(a : AABB, b : AABB) {
+    pub fn from_boxes(a : AABB, b : AABB) -> Self {
         let x = Interval::combine(a.x, b.x);
         let y = Interval::combine(a.y, b.y);
         let z = Interval::combine(a.z, b.z);

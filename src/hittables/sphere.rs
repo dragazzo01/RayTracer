@@ -18,7 +18,7 @@ impl Sphere {
             center : Ray::new(center, Vec3::zero()), 
             radius, 
             mat,
-            rvec : AABB::new(center - rvec, center + rvec),
+            bbox : AABB::from_points(center - rvec, center + rvec),
         }
     }
 
@@ -28,8 +28,8 @@ impl Sphere {
         let center = Ray::new(center_start, center_end - center_start);
         
         let rvec = Vec3::new(radius, radius, radius);
-        let box1 = AABB::new(center.at(0) - rvec, center.at(0) + rvec);
-        let box2 = AABB::new(center.at(1) - rvec, center.at(1) + rvec);
+        let box1 = AABB::from_points(center.at(0.) - rvec, center.at(0.) + rvec);
+        let box2 = AABB::from_points(center.at(1.) - rvec, center.at(1.) + rvec);
         Self {
             center,
             radius, 

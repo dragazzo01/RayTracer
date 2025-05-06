@@ -10,6 +10,7 @@ mod materials;
 
 use crate::prelude::*;
 use crate::camera::{CamArgs, Camera};
+use crate::hittables::hittables::HittableList;
 
 
 
@@ -35,6 +36,9 @@ fn temp1() -> Result<(), Error>  {
     world.add_static_sphere(Vec3::new(-1.0,    0.0, -1.0),   0.5, mat_left);
     world.add_static_sphere(Vec3::new(-1.0,    0.0, -1.0),   0.4, mat_bubble);
     world.add_static_sphere(Vec3::new( 1.0,    0.0, -1.0),   0.5, mat_right);
+
+    let mut rng = rand::thread_rng();
+    let world = BVHNode::from_list(&mut world, &mut rng);
 
     let args = CamArgs {
         aspect_ratio : 16. / 9.,
@@ -98,6 +102,7 @@ fn final1() -> Result<(), Error>  {
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
     world.add_static_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
+    let world = BVHNode::from_list(&mut world, &mut rng);
 
     let args = CamArgs {
         aspect_ratio : 16.0 / 9.0,
@@ -164,6 +169,7 @@ fn temp2() -> Result<(), Error>  {
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
     world.add_static_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
+    let world = BVHNode::from_list(&mut world, &mut rng);
 
     let args = CamArgs {
         aspect_ratio : 16.0 / 9.0,
