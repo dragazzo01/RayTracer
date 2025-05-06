@@ -15,9 +15,9 @@ use crate::hittables::hittables::HittableList;
 
 
 fn main() -> Result<(), Error> {              
-    //_ = temp1();
+    _ = temp1();
     //_ = final1();
-    _ = temp2();
+    //_ = temp2();
     Ok(())
 }
 

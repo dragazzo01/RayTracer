@@ -7,7 +7,7 @@ use crate::hittables::aabb::AABB;
 
 #[derive(Debug, Clone)]
 pub enum BVHNode {
-    Leaf(Hittables, AABB),
+    Leaf(Hittables),
     Node {
         left : Box<BVHNode>,
         right : Box<BVHNode>,
@@ -18,6 +18,24 @@ pub enum BVHNode {
 
 impl BVHNode {
     pub fn new(objects : &mut Vec<Hittables>, start : usize, end : usize, rng : &mut ThreadRng) -> Self {
+
+        println!("Start {:?}, End {:?}", start, end);
+        let span = end - start;
+        
+        if span == 1 {return Self::Leaf(objects[start]);}
+            // 2 => {
+            //     let left = objects[start];
+            //     let right = objects[start+1];
+
+            //     let bbox = AABB::from_boxes(left.bounding_box(), right.bounding_box());
+                
+            //     let left = Box::new(Self::Leaf(left, left.bounding_box()));
+            //     let right = Box::new(Self::Leaf(right, right.bounding_box()));
+
+                
+            //     Self::Node {left, right, bbox}
+            // },
+   
         let axis = gen_int(0, 2, rng);
 
         let comparator = match axis {
@@ -27,39 +45,21 @@ impl BVHNode {
             _ => panic!("unreachable"),
         };
 
-        let span = end - start;
-        
-        match span {
-            1 => {
-                Self::Leaf(objects[start], objects[start].bounding_box())
-            },
-            2 => {
-                let left = objects[start];
-                let right = objects[start+1];
-
-                let bbox = AABB::from_boxes(left.bounding_box(), right.bounding_box());
-                
-                let left = Box::new(Self::Leaf(left, left.bounding_box()));
-                let right = Box::new(Self::Leaf(right, right.bounding_box()));
-
-                
-                Self::Node {left, right, bbox}
-            },
-            _ => {   
-                objects[start..end].sort_by(comparator);
+        objects[start..end].sort_by(comparator);
     
-                let mid = start + span/2;
+        let mid = start + span/2;
     
-                let left = Box::new(Self::new(objects, start, mid, rng));
-                let right = Box::new(Self::new(objects, mid, end, rng));
-                let bbox = AABB::from_boxes(left.bounding_box(), right.bounding_box());
-                Self::Node { left, right, bbox }
-            }
-        }
+        let left = Box::new(Self::new(objects, start, mid, rng));
+        let right = Box::new(Self::new(objects, mid, end, rng));
+        let bbox = AABB::from_boxes(left.bounding_box(), right.bounding_box());
+        Self::Node { left, right, bbox }
     }
+
 
     pub fn from_list(list : &mut HittableList, rng : &mut ThreadRng) -> Self {
         let len = list.objects.len();
+        println!("Total Objects: {len}");
+        //println!("List: {:?}", list);
         Self::new(&mut list.objects, 0, len, rng)
     }
 
@@ -85,7 +85,7 @@ impl BVHNode {
 
     pub fn bounding_box(&self) -> AABB {
         match self {
-            Self::Leaf(_, bbox) => *bbox,
+            Self::Leaf(x) => x.bounding_box(),
             Self::Node {left : _, right : _, bbox } => *bbox,
         }
     }
@@ -94,7 +94,7 @@ impl BVHNode {
         if self.bounding_box().hit(ray).is_none() {return None;};
 
         match self {
-            Self::Leaf(object, _) => object.hit(ray, ray_t),
+            Self::Leaf(object) => object.hit(ray, ray_t),
             Self::Node{left, right, ..} => {
                 let mut final_hit_record = None;
                 let mut closest_so_far = ray_t.max;
