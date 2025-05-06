@@ -21,6 +21,14 @@ impl AABB {
         }
     }
 
+    pub fn empty() -> Self {
+        Self {
+            x : Interval::empty(),
+            y : Interval::empty(),
+            z : Interval::empty(),
+        }
+    }
+
     pub fn from_points(a : Point3, b : Point3) -> Self {
         let x = if a.x <= b.x {Interval::new(a.x, b.x)} else {Interval::new(b.x, a.x)};
         let y = if a.y <= b.y {Interval::new(a.y, b.y)} else {Interval::new(b.y, a.y)};
@@ -33,6 +41,14 @@ impl AABB {
         let y = Interval::combine(a.y, b.y);
         let z = Interval::combine(a.z, b.z);
         Self {x, y, z}
+    }
+
+    pub fn longest_axis(&self) -> i32 {
+        if self.x.size() > self.y.size() {
+            if self.x.size() > self.z.size() {0} else {2}
+        } else {
+            if self.y.size() > self.z.size() {1} else {2}
+        }
     }
 
     pub fn axis_interval(&self, n : i32) -> Interval {

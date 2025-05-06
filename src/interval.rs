@@ -14,7 +14,7 @@ impl Interval {
 
     pub fn combine(a : Self, b : Self) -> Self {
         let min = if a.min <= b.min {a.min} else {b.min};
-        let max = if a.max >= a.max {a.max} else {b.max};
+        let max = if a.max >= b.max {a.max} else {b.max};
         Self {min, max}
     }
 

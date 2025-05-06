@@ -15,9 +15,9 @@ use crate::hittables::hittables::HittableList;
 
 
 fn main() -> Result<(), Error> {              
-    _ = temp1();
+    //_ = temp1();
     //_ = final1();
-    //_ = temp2();
+    _ = temp2();
     Ok(())
 }
 
@@ -37,8 +37,7 @@ fn temp1() -> Result<(), Error>  {
     world.add_static_sphere(Vec3::new(-1.0,    0.0, -1.0),   0.4, mat_bubble);
     world.add_static_sphere(Vec3::new( 1.0,    0.0, -1.0),   0.5, mat_right);
 
-    let mut rng = rand::thread_rng();
-    let world = BVHNode::from_list(&mut world, &mut rng);
+    let world = BVHNode::from_list(&mut world);
 
     let args = CamArgs {
         aspect_ratio : 16. / 9.,
@@ -72,13 +71,13 @@ fn final1() -> Result<(), Error>  {
             let center = Point3::new(a as f64 + 0.9*gen_01(&mut rng), 0.2, b as f64 + 0.9*gen_01(&mut rng));
 
             if (center - Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
-                if choose_mat < 0.8 {
+                if choose_mat < 0.7 {
                     //diffuse
                     let albedo = Color3::random(&mut rng) * Color3::random(&mut rng);
                     let mat = Materials::lambertian(albedo);
                     world.add_static_sphere(center, 0.2, mat);
 
-                } else if choose_mat < 0.95 {
+                } else if choose_mat < 0.85 {
                     //metal
                     let albedo = Color3::random_bound(0.5, 1.0, &mut rng);
                     let fuzz = gen_bound(0.0, 0.5, &mut rng);
@@ -102,7 +101,7 @@ fn final1() -> Result<(), Error>  {
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
     world.add_static_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
-    let world = BVHNode::from_list(&mut world, &mut rng);
+    let world = BVHNode::from_list(&mut world);
 
     let args = CamArgs {
         aspect_ratio : 16.0 / 9.0,
@@ -141,9 +140,9 @@ fn temp2() -> Result<(), Error>  {
                     //diffuse
                     let albedo = Color3::random(&mut rng) * Color3::random(&mut rng);
                     let mat = Materials::lambertian(albedo);
-                    //let center2 = center + Vec3::new(0., gen_bound(0., 0.5, &mut rng), 0.);
-                    //world.add_moving_sphere(center, center2, 0.2, mat);
-                    world.add_static_sphere(center, 0.2, mat);
+                    let center2 = center + Vec3::new(0., gen_bound(0., 0.5, &mut rng), 0.);
+                    world.add_moving_sphere(center, center2, 0.2, mat);
+                    //world.add_static_sphere(center, 0.2, mat);
 
                 } else if choose_mat < 0.95 {
                     //metal
@@ -169,7 +168,7 @@ fn temp2() -> Result<(), Error>  {
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
     world.add_static_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
-    let world = BVHNode::from_list(&mut world, &mut rng);
+    let world = BVHNode::from_list(&mut world);
 
     let args = CamArgs {
         aspect_ratio : 16.0 / 9.0,
@@ -182,7 +181,7 @@ fn temp2() -> Result<(), Error>  {
         v_up : Vec3::new(0., 1., 0.),
         defocus_angle : 0.6,
         focus_dist : 10.,
-        thread_num : 1,
+        thread_num : 4,
     };
 
     let camera = Camera::initilize(args);

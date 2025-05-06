@@ -13,30 +13,20 @@ pub enum BVHNode {
         right : Box<BVHNode>,
         bbox : AABB,
     }, 
-    
 }
 
 impl BVHNode {
-    pub fn new(objects : &mut Vec<Hittables>, start : usize, end : usize, rng : &mut ThreadRng) -> Self {
-
-        println!("Start {:?}, End {:?}", start, end);
+    pub fn new(objects : &mut Vec<Hittables>, start : usize, end : usize) -> Self {        
         let span = end - start;
         
         if span == 1 {return Self::Leaf(objects[start]);}
-            // 2 => {
-            //     let left = objects[start];
-            //     let right = objects[start+1];
 
-            //     let bbox = AABB::from_boxes(left.bounding_box(), right.bounding_box());
-                
-            //     let left = Box::new(Self::Leaf(left, left.bounding_box()));
-            //     let right = Box::new(Self::Leaf(right, right.bounding_box()));
+        let mut bbox  = AABB::empty();
+        for i in start..end {
+            bbox = AABB::from_boxes(bbox, objects[i].bounding_box()); 
+        }
 
-                
-            //     Self::Node {left, right, bbox}
-            // },
-   
-        let axis = gen_int(0, 2, rng);
+        let axis = bbox.longest_axis();
 
         let comparator = match axis {
             0 => Self::box_compare_x,
@@ -49,18 +39,17 @@ impl BVHNode {
     
         let mid = start + span/2;
     
-        let left = Box::new(Self::new(objects, start, mid, rng));
-        let right = Box::new(Self::new(objects, mid, end, rng));
-        let bbox = AABB::from_boxes(left.bounding_box(), right.bounding_box());
+        let left = Box::new(Self::new(objects, start, mid));
+        let right = Box::new(Self::new(objects, mid, end));
+
         Self::Node { left, right, bbox }
     }
 
 
-    pub fn from_list(list : &mut HittableList, rng : &mut ThreadRng) -> Self {
+    pub fn from_list(list : &mut HittableList) -> Self {
         let len = list.objects.len();
-        println!("Total Objects: {len}");
-        //println!("List: {:?}", list);
-        Self::new(&mut list.objects, 0, len, rng)
+        let x = Self::new(&mut list.objects, 0, len);
+        x
     }
 
     fn box_compare(a : &Hittables, b : &Hittables, axis : i32) -> Ordering {
