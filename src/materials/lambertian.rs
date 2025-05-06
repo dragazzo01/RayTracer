@@ -1,16 +1,45 @@
 use crate::prelude::*;
 
+/// Represents a Lambertian (diffuse) material.
+/// This material scatters light uniformly in all directions.
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct Lambertian {
-    albedo : Color3,
+    /// The albedo (reflectivity) of the material, represented as a color.
+    albedo: Color3,
 }
 
 impl Lambertian {
-    pub(crate) fn new(albedo : Color3) -> Self {
+    /// Creates a new `Lambertian` material with the specified albedo.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `albedo` - The reflectivity of the material as a `Color3`.
+    /// 
+    /// # Returns
+    /// 
+    /// A new instance of `Lambertian`.
+    pub(crate) fn new(albedo: Color3) -> Self {
         Self {albedo}
     }
 
-    pub(crate) fn scatter (&self, ray_in : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
+    /// Computes how a ray scatters when it hits the Lambertian material.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `ray_in` - The incoming ray hitting the material.
+    /// * `hit_record` - Information about the hit point, including the normal and hit location.
+    /// * `rng` - A random number generator used for generating random scatter directions.
+    /// 
+    /// # Returns
+    /// 
+    /// An optional tuple containing the attenuation color and the scattered ray.
+    /// If `None` is returned, the ray is absorbed.
+    pub(crate) fn scatter(
+        &self,
+        ray_in: &Ray,
+        hit_record: &HitRecord,
+        rng: &mut ThreadRng,
+    ) -> Option<(Color3, Ray)> {
         let scatter_direction = {
             let res = hit_record.normal + Vec3::random_unit(rng);
             if res.near_zero() {

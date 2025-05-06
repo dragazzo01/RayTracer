@@ -1,30 +1,54 @@
 use crate::prelude::*;
 use crate::hittables::aabb::AABB;
 
+/// Represents a sphere that can be static or moving in the scene.
+/// 
+/// # Fields
+/// - `center`: The center of the sphere, represented as a `Ray`.
+/// - `radius`: The radius of the sphere.
+/// - `mat`: The material of the sphere.
+/// - `bbox`: The bounding box of the sphere.
 #[derive(Debug, Copy, Clone)]
 pub struct Sphere {
-    pub center : Ray,
-    pub radius : f64,
-    pub mat : Materials,
-    pub bbox : AABB,
+    pub center: Ray,
+    pub radius: f64,
+    pub mat: Materials,
+    pub bbox: AABB,
 }
 
 impl Sphere {
-    //static Shere
-    pub fn new_static(center : Point3, radius : f64, mat : Materials) -> Self {
-        let rvec  = Vec3::new(radius, radius, radius);
+    /// Creates a new static sphere.
+    ///
+    /// # Arguments
+    /// - `center`: The center of the sphere as a `Point3`.
+    /// - `radius`: The radius of the sphere.
+    /// - `mat`: The material of the sphere.
+    ///
+    /// # Returns
+    /// A new `Sphere` instance.
+    pub fn new_static(center: Point3, radius: f64, mat: Materials) -> Self {
+        let rvec = Vec3::new(radius, radius, radius);
 
         Self {
-            center : Ray::new(center, Vec3::zero()), 
+            center: Ray::new(center, Vec3::zero()), 
             radius, 
             mat,
-            bbox : AABB::from_points(center - rvec, center + rvec),
+            bbox: AABB::from_points(center - rvec, center + rvec),
         }
     }
 
-
+    /// Creates a new moving sphere.
+    ///
+    /// # Arguments
+    /// - `center_start`: The starting center position of the sphere as a `Point3`.
+    /// - `center_end`: The ending center position of the sphere as a `Point3`.
+    /// - `radius`: The radius of the sphere.
+    /// - `mat`: The material of the sphere.
+    ///
+    /// # Returns
+    /// A new `Sphere` instance.
     #[allow(dead_code)]
-    pub fn new_moving(center_start : Point3, center_end : Point3, radius : f64, mat : Materials) -> Self {
+    pub fn new_moving(center_start: Point3, center_end: Point3, radius: f64, mat: Materials) -> Self {
         let center = Ray::new(center_start, center_end - center_start);
         
         let rvec = Vec3::new(radius, radius, radius);
@@ -34,18 +58,27 @@ impl Sphere {
             center,
             radius, 
             mat,
-            bbox : AABB::from_boxes(box1, box2),
+            bbox: AABB::from_boxes(box1, box2),
         }
     }
 
-    pub fn hit(&self, ray : &Ray, interval : Interval) -> Option<HitRecord> {
+    /// Determines if a ray hits the sphere.
+    ///
+    /// # Arguments
+    /// - `ray`: The ray to test for intersection.
+    /// - `interval`: The valid interval for the ray parameter `t`.
+    ///
+    /// # Returns
+    /// An `Option<HitRecord>` containing the hit information if the ray intersects the sphere,
+    /// or `None` if there is no intersection.
+    pub fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
         //determine if ray hits sphere
         let center = self.center.at(ray.time);
         let oc = center - ray.origin;
         let a = ray.direction.norm();
         let h = ray.direction.dot(&oc);
-        let c = oc.norm() - self.radius*self.radius;
-        let discriminant = h*h - a*c;
+        let c = oc.norm() - self.radius * self.radius;
+        let discriminant = h * h - a * c;
         if discriminant < 0.0 {
             return None;
         } 
@@ -64,7 +97,7 @@ impl Sphere {
         let point = ray.at(root);
         let normal = (point - center) / self.radius;
 
-        let mut res = HitRecord {point, normal, t, mat : self.mat, front_face : false};
+        let mut res = HitRecord {point, normal, t, mat: self.mat, front_face: false};
         res.set_face_normal(ray, &normal);
         Some(res)
     }

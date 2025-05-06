@@ -3,20 +3,35 @@ use std::cmp::Ordering;
 use crate::prelude::*;
 use crate::hittables::hittables::{Hittables, HittableList};
 use crate::hittables::aabb::AABB;
-//use std::
 
+/// Represents a Bounding Volume Hierarchy (BVH) node.
+///
+/// A BVH is used to accelerate ray tracing by organizing objects into a tree structure.
+/// 
+/// # Variants
+/// - `Leaf`: A leaf node containing a single hittable object.
+/// - `Node`: An internal node containing two child nodes and a bounding box.
 #[derive(Debug, Clone)]
 pub enum BVHNode {
     Leaf(Hittables),
     Node {
-        left : Box<BVHNode>,
-        right : Box<BVHNode>,
-        bbox : AABB,
-    }, 
+        left: Box<BVHNode>,
+        right: Box<BVHNode>,
+        bbox: AABB,
+    },
 }
 
 impl BVHNode {
-    pub fn new(objects : &mut Vec<Hittables>, start : usize, end : usize) -> Self {        
+    /// Constructs a new BVH node from a list of hittable objects.
+    ///
+    /// # Arguments
+    /// - `objects`: A mutable reference to a vector of hittable objects.
+    /// - `start`: The starting index of the objects to include in this node.
+    /// - `end`: The ending index (exclusive) of the objects to include in this node.
+    ///
+    /// # Returns
+    /// A new `BVHNode` instance.
+    fn new(objects: &mut Vec<Hittables>, start: usize, end: usize) -> Self {        
         let span = end - start;
         
         if span == 1 {return Self::Leaf(objects[start]);}
@@ -45,14 +60,29 @@ impl BVHNode {
         Self::Node { left, right, bbox }
     }
 
-
-    pub fn from_list(list : &mut HittableList) -> Self {
+    /// Constructs a BVH tree from a `HittableList`.
+    ///
+    /// # Arguments
+    /// - `list`: A mutable reference to a `HittableList` containing the objects to organize.
+    ///
+    /// # Returns
+    /// The root node of the constructed BVH tree.
+    pub fn from_list(list: &mut HittableList) -> Self {
         let len = list.objects.len();
         let x = Self::new(&mut list.objects, 0, len);
         x
     }
 
-    fn box_compare(a : &Hittables, b : &Hittables, axis : i32) -> Ordering {
+    /// Compares two hittable objects along a specified axis.
+    ///
+    /// # Arguments
+    /// - `a`: The first hittable object.
+    /// - `b`: The second hittable object.
+    /// - `axis`: The axis to compare (0 for x, 1 for y, 2 for z).
+    ///
+    /// # Returns
+    /// An `Ordering` indicating the relative positions of the objects along the axis.
+    fn box_compare(a: &Hittables, b: &Hittables, axis: i32) -> Ordering {
         let a_axis_interval = a.bounding_box().axis_interval(axis);
         let b_axis_interval = b.bounding_box().axis_interval(axis);
         
@@ -60,18 +90,46 @@ impl BVHNode {
         else {Ordering::Greater}
     }
 
-    fn box_compare_x(a : &Hittables, b : &Hittables) -> Ordering {
+    /// Compares two hittable objects along the x-axis.
+    ///
+    /// # Arguments
+    /// - `a`: The first hittable object.
+    /// - `b`: The second hittable object.
+    ///
+    /// # Returns
+    /// An `Ordering` indicating the relative positions of the objects along the x-axis.
+    fn box_compare_x(a: &Hittables, b: &Hittables) -> Ordering {
         Self::box_compare(a, b, 0)
     }
 
-    fn box_compare_y(a : &Hittables, b : &Hittables) -> Ordering {
+    /// Compares two hittable objects along the y-axis.
+    ///
+    /// # Arguments
+    /// - `a`: The first hittable object.
+    /// - `b`: The second hittable object.
+    ///
+    /// # Returns
+    /// An `Ordering` indicating the relative positions of the objects along the y-axis.
+    fn box_compare_y(a: &Hittables, b: &Hittables) -> Ordering {
         Self::box_compare(a, b, 1)
     }
 
-    fn box_compare_z(a : &Hittables, b : &Hittables) -> Ordering {
+    /// Compares two hittable objects along the z-axis.
+    ///
+    /// # Arguments
+    /// - `a`: The first hittable object.
+    /// - `b`: The second hittable object.
+    ///
+    /// # Returns
+    /// An `Ordering` indicating the relative positions of the objects along the z-axis.
+    fn box_compare_z(a: &Hittables, b: &Hittables) -> Ordering {
         Self::box_compare(a, b, 2)
     }
 
+    /// Returns the bounding box of the BVH node.
+    ///
+    /// # Returns
+    /// The `AABB` representing the bounding box of this node.
     pub fn bounding_box(&self) -> AABB {
         match self {
             Self::Leaf(x) => x.bounding_box(),
@@ -79,7 +137,16 @@ impl BVHNode {
         }
     }
 
-    pub fn hit(&self, ray : &Ray, ray_t : Interval) -> Option<HitRecord> {
+    /// Determines if a ray intersects the BVH node.
+    ///
+    /// # Arguments
+    /// - `ray`: The ray to test for intersection.
+    /// - `ray_t`: The valid interval for the ray parameter `t`.
+    ///
+    /// # Returns
+    /// An `Option<HitRecord>` containing the hit information if the ray intersects an object
+    /// in the BVH node, or `None` if there is no intersection.
+    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         if self.bounding_box().hit(ray).is_none() {return None;};
 
         match self {

@@ -1,8 +1,7 @@
 pub use std::io::{Write, Error};
-//
-pub use indicatif::{ProgressBar, ProgressStyle};
-pub use std::thread;
 pub use std::fs::File;
+
+pub use std::thread;
 pub use rand::rngs::ThreadRng;
 pub use rand::Rng;
 
