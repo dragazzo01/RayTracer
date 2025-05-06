@@ -10,28 +10,28 @@ pub(crate) struct Lambertian {
 
 impl Lambertian {
     /// Creates a new `Lambertian` material with the specified albedo.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `albedo` - The reflectivity of the material as a `Color3`.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A new instance of `Lambertian`.
     pub(crate) fn new(albedo: Color3) -> Self {
-        Self {albedo}
+        Self { albedo }
     }
 
     /// Computes how a ray scatters when it hits the Lambertian material.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `ray_in` - The incoming ray hitting the material.
     /// * `hit_record` - Information about the hit point, including the normal and hit location.
     /// * `rng` - A random number generator used for generating random scatter directions.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An optional tuple containing the attenuation color and the scattered ray.
     /// If `None` is returned, the ray is absorbed.
     pub(crate) fn scatter(
@@ -48,7 +48,6 @@ impl Lambertian {
                 res
             }
         };
-        
 
         let scattered = Ray::new_time(hit_record.point, scatter_direction, ray_in.time);
         Some((self.albedo, scattered))

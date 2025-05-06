@@ -23,7 +23,11 @@ impl Ray {
     ///
     /// A new `Ray` instance with the specified origin and direction, and a default time of `0.0`.
     pub fn new(origin: Point3, direction: Vec3) -> Self {
-        Self { origin, direction, time: 0.0 }
+        Self {
+            origin,
+            direction,
+            time: 0.0,
+        }
     }
 
     /// Creates a new `Ray` with the given origin, direction, and time.
@@ -38,7 +42,11 @@ impl Ray {
     ///
     /// A new `Ray` instance with the specified origin, direction, and time.
     pub fn new_time(origin: Point3, direction: Vec3, time: f64) -> Self {
-        Self { origin, direction, time }
+        Self {
+            origin,
+            direction,
+            time,
+        }
     }
 
     /// Computes the point along the ray at a given parameter `t`.

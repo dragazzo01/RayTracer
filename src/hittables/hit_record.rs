@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 /// Represents the record of a ray hitting a surface.
-/// 
+///
 /// # Fields
 /// - `point`: The point of intersection.
 /// - `normal`: The normal vector at the intersection point.
@@ -29,6 +29,10 @@ impl HitRecord {
     /// and adjusts the normal direction accordingly.
     pub fn set_face_normal(&mut self, ray: &Ray, outward_normal: &Vec3) {
         self.front_face = ray.direction.dot(outward_normal) < 0.0;
-        self.normal = if self.front_face {*outward_normal} else {-1.0 * *outward_normal}
+        self.normal = if self.front_face {
+            *outward_normal
+        } else {
+            -1.0 * *outward_normal
+        }
     }
 }

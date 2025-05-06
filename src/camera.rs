@@ -150,19 +150,18 @@ impl Camera {
             return Color3::zero();
         }
 
-        match world.hit(ray, Interval::new(0.001, INF)) {
-            None => (),
-            Some(hr) => match hr.mat.scatter(ray, &hr, rng) {
-                None => return Color3::zero(),
+        if let Some(hr) = world.hit(ray, Interval::new(0.001, INF)) {
+            match hr.mat.scatter(ray, &hr, rng) {
                 Some((attenuation, scattered)) => {
                     return attenuation * Self::ray_color(&scattered, world, depth - 1, rng)
                 }
-            },
+                None => return Color3::zero(),
+            }
         }
 
         let unit_direction = ray.direction.normalize();
         let a = 0.5 * (unit_direction.y + 1.0);
-        return (1.0 - a) * Color3::new(1.0, 1.0, 1.0) + a * Color3::new(0.5, 0.7, 1.0);
+        (1.0 - a) * Color3::new(1.0, 1.0, 1.0) + a * Color3::new(0.5, 0.7, 1.0)
     }
 
     /// Generates a random sample within a unit square.
@@ -267,7 +266,10 @@ impl Camera {
             .progress_chars("=>-"),
         );
 
-        println!("Creating a {} x {} image", self.image_width, self.image_height);
+        println!(
+            "Creating a {} x {} image",
+            self.image_width, self.image_height
+        );
 
         for thread in 0..self.thread_num {
             let progress_bar = Arc::clone(&progress_bar);
@@ -313,11 +315,13 @@ impl Camera {
         println!("Writing to File");
         let mut file = File::create(path)?;
         // Write data as bytes
-        file.write_all(format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes())?;
+        file.write_all(
+            format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes(),
+        )?;
 
-        for j in 0..self.image_height {
-            for i in 0..self.image_width {
-                lines[j][i].writeln_color(&mut file)?;
+        for line in lines.iter() {
+            for pixel in line.iter() {
+                pixel.writeln_color(&mut file)?;
             }
         }
         println!("Done!");

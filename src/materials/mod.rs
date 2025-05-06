@@ -1,4 +1,4 @@
-pub mod materials;
-mod lambertian;
-mod metal;
 mod dielectric;
+mod lambertian;
+pub mod materials;
+mod metal;

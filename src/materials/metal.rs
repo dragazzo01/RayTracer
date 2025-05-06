@@ -12,29 +12,29 @@ pub(crate) struct Metal {
 
 impl Metal {
     /// Creates a new `Metal` material with the specified albedo and fuzziness.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `albedo` - The reflectivity of the material as a `Color3`.
     /// * `fuzz` - The fuzziness of the reflection. Should be in the range [0.0, 1.0].
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A new instance of `Metal`.
     pub(crate) fn new(albedo: Color3, fuzz: f64) -> Self {
         Self { albedo, fuzz }
     }
 
     /// Computes how a ray scatters when it hits the metallic material.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `ray_in` - The incoming ray hitting the material.
     /// * `hit_record` - Information about the hit point, including the normal and hit location.
     /// * `rng` - A random number generator used for generating random scatter directions.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An optional tuple containing the attenuation color and the scattered ray.
     /// If `None` is returned, the ray is absorbed.
     pub(crate) fn scatter(
@@ -43,8 +43,7 @@ impl Metal {
         hit_record: &HitRecord,
         rng: &mut ThreadRng,
     ) -> Option<(Color3, Ray)> {
-        let reflected = 
-            ray_in.direction.reflect(&hit_record.normal).normalize() 
+        let reflected = ray_in.direction.reflect(&hit_record.normal).normalize()
             + self.fuzz * Vec3::random_unit(rng);
         let scattered = Ray::new_time(hit_record.point, reflected, ray_in.time);
 

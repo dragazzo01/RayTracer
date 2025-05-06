@@ -1,7 +1,7 @@
-use crate::prelude::*;
-use crate::materials::lambertian::Lambertian;
 use crate::materials::dielectric::Dielectric;
+use crate::materials::lambertian::Lambertian;
 use crate::materials::metal::Metal;
+use crate::prelude::*;
 
 /// Represents the different types of materials that can be used in the ray tracer.
 /// Each material has its own scattering behavior.
@@ -17,56 +17,56 @@ pub enum Materials {
 
 impl Materials {
     /// Creates a new Lambertian material.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `albedo` - The reflectivity of the material as a `Color3`.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A `Materials` enum variant containing a Lambertian material.
     pub fn lambertian(albedo: Color3) -> Self {
         Self::Lambertian(Lambertian::new(albedo))
     }
 
     /// Creates a new Metallic material.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `albedo` - The reflectivity of the material as a `Color3`.
     /// * `fuzz` - The fuzziness of the reflection. Should be in the range [0.0, 1.0].
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A `Materials` enum variant containing a Metallic material.
     pub fn metal(albedo: Color3, fuzz: f64) -> Self {
-        let fuzz = if fuzz < 1.0 {fuzz} else {1.0};
+        let fuzz = if fuzz < 1.0 { fuzz } else { 1.0 };
         Self::Metal(Metal::new(albedo, fuzz))
     }
 
     /// Creates a new Dielectric material.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `refraction_index` - The index of refraction of the material.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A `Materials` enum variant containing a Dielectric material.
     pub fn dielectric(refraction_index: f64) -> Self {
         Self::Dielectric(Dielectric::new(refraction_index))
     }
 
     /// Computes how a ray scatters when it hits the material.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `ray` - The incoming ray hitting the material.
     /// * `hit_record` - Information about the hit point, including the normal and hit location.
     /// * `rng` - A random number generator used for probabilistic decisions.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An optional tuple containing the attenuation color and the scattered ray.
     /// If `None` is returned, the ray is absorbed.
     pub fn scatter(
@@ -82,6 +82,3 @@ impl Materials {
         }
     }
 }
-
-
-

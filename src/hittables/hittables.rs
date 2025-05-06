@@ -1,7 +1,7 @@
-use crate::prelude::*;
+use crate::hittables::aabb::AABB;
 use crate::hittables::hit_record::HitRecord;
 use crate::hittables::sphere::Sphere;
-use crate::hittables::aabb::AABB;
+use crate::prelude::*;
 
 /// Represents a collection of hittable objects in the scene.
 ///
@@ -83,7 +83,10 @@ impl HittableList {
     /// # Returns
     /// A new `HittableList` instance with no objects.
     pub fn empty() -> Self {
-        Self { objects: Vec::new(), bbox: AABB::universe() }
+        Self {
+            objects: Vec::new(),
+            bbox: AABB::universe(),
+        }
     }
 
     fn add(&mut self, object: Hittables) {
@@ -128,15 +131,12 @@ impl HittableList {
         let mut closest_so_far = interval.max;
 
         for object in &self.objects {
-            match object.hit(ray, Interval::new(interval.min, closest_so_far)) {
-                Some(hr) => {
-                    closest_so_far = hr.t;
-                    final_hit_record = Some(hr);
-                }
-                None => (),
-            }
+            if let Some(hr) =  object.hit(ray, Interval::new(interval.min, closest_so_far)) {
+                closest_so_far = hr.t;
+                final_hit_record = Some(hr);
+            }   
         }
 
-        return final_hit_record;
+        final_hit_record
     }
 }

@@ -108,12 +108,10 @@ impl AABB {
             } else {
                 2
             }
+        } else if self.y.size() > self.z.size() {
+            1
         } else {
-            if self.y.size() > self.z.size() {
-                1
-            } else {
-                2
-            }
+            2
         }
     }
 
@@ -164,7 +162,8 @@ impl AABB {
             };
 
             if t1 < hit_int.max {
-                hit_int.max = t1;
+            
+    hit_int.max = t1;
             };
 
             if hit_int.max <= hit_int.min {
@@ -175,3 +174,4 @@ impl AABB {
         Some(hit_int)
     }
 }
+    

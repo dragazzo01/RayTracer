@@ -1,24 +1,18 @@
 use crate::prelude::*;
 
-use std::ops::{
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Index
-};
+use std::ops::{Add, Div, Index, Mul, Sub};
 
 /// A 3D vector with `x`, `y`, and `z` components.
-/// 
+///
 /// This struct is used to represent points, colors, and directions in 3D space.
 #[derive(Debug, Copy, Clone)]
 pub struct Vec3 {
     /// The x-component of the vector.
-    pub x : f64,
+    pub x: f64,
     /// The y-component of the vector.
-    pub y : f64,
+    pub y: f64,
     /// The z-component of the vector.
-    pub z : f64,
+    pub z: f64,
 }
 
 /// Type alias for a 3D point.
@@ -85,7 +79,7 @@ impl Mul<Vec3> for f64 {
     /// Scales the vector by a scalar (commutative).
     fn mul(self, vec: Vec3) -> Vec3 {
         vec * self
-    } 
+    }
 }
 
 impl Div<f64> for Vec3 {
@@ -107,7 +101,7 @@ impl Div<Vec3> for f64 {
     /// Divides a scalar by the vector component-wise.
     fn div(self, vec: Vec3) -> Vec3 {
         vec / self
-    } 
+    }
 }
 
 // Implement the `Index` trait for indexing
@@ -128,28 +122,32 @@ impl Index<usize> for Vec3 {
 impl Vec3 {
     /// Creates a vector with all components set to zero.
     pub fn zero() -> Self {
-        Self {x : 0.0, y: 0.0, z: 0.0}
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 
     /// Creates a new vector with the specified components.
-    pub fn new(x : f64, y : f64, z : f64) -> Self {
-        Self {x, y, z}
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Self { x, y, z }
     }
 
     /// Generates a random vector with components in the range [0, 1).
-    pub fn random(rng : &mut ThreadRng) -> Self {
+    pub fn random(rng: &mut ThreadRng) -> Self {
         Self {
-            x : gen_01(rng),
-            y : gen_01(rng),
+            x: gen_01(rng),
+            y: gen_01(rng),
             z: gen_01(rng),
         }
     }
 
     /// Generates a random vector with components in the specified range.
-    pub fn random_bound(min : f64, max : f64, rng: &mut ThreadRng) -> Self {
+    pub fn random_bound(min: f64, max: f64, rng: &mut ThreadRng) -> Self {
         Self {
-            x : crate::random::gen_bound(min, max, rng),
-            y : crate::random::gen_bound(min, max,rng),
+            x: crate::random::gen_bound(min, max, rng),
+            y: crate::random::gen_bound(min, max, rng),
             z: crate::random::gen_bound(min, max, rng),
         }
     }
@@ -166,7 +164,7 @@ impl Vec3 {
     }
 
     /// Generates a random vector in the hemisphere around a given normal.
-    pub fn random_hemisphere(normal : &Self, rng: &mut ThreadRng) -> Self {
+    pub fn random_hemisphere(normal: &Self, rng: &mut ThreadRng) -> Self {
         let on_sphere = Self::random_unit(rng);
         if on_sphere.dot(normal) > 0.0 {
             on_sphere
@@ -179,10 +177,10 @@ impl Vec3 {
     pub fn random_disk(rng: &mut ThreadRng) -> Self {
         loop {
             let p = Self::new(
-                        crate::random::gen_bound(-1.0, 1.0, rng), 
-                        crate::random::gen_bound(-1.0, 1.0, rng), 
-                        0.0
-                    );
+                crate::random::gen_bound(-1.0, 1.0, rng),
+                crate::random::gen_bound(-1.0, 1.0, rng),
+                0.0,
+            );
             if p.norm() < 1.0 {
                 return p;
             }
@@ -196,12 +194,12 @@ impl Vec3 {
     }
 
     /// Reflects the vector around a given normal.
-    pub fn reflect(&self, n : &Self) -> Self {
+    pub fn reflect(&self, n: &Self) -> Self {
         *self - 2.0 * self.dot(n) * *n
     }
 
     /// Refracts the vector through a surface with a given refraction ratio.
-    pub fn refract(&self, n : &Self, etai_over_etat : f64) -> Self {
+    pub fn refract(&self, n: &Self, etai_over_etat: f64) -> Self {
         let cos_theta = f64::min((-1.0 * *self).dot(n), 1.0);
         let r_out_perp = etai_over_etat * (*self + cos_theta * *n);
         let r_out_parallel = -(1.0 - r_out_perp.norm()).abs().sqrt() * *n;
@@ -210,7 +208,7 @@ impl Vec3 {
 
     /// Computes the squared length (norm) of the vector.
     pub fn norm(self) -> f64 {
-        self.x*self.x + self.y*self.y + self.z*self.z
+        self.x * self.x + self.y * self.y + self.z * self.z
     }
 
     /// Computes the length (magnitude) of the vector.
@@ -219,7 +217,7 @@ impl Vec3 {
     }
 
     /// Computes the dot product of two vectors.
-    pub fn dot(self, other : &Self) -> f64 {
+    pub fn dot(self, other: &Self) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
@@ -251,7 +249,7 @@ impl Vec3 {
     }
 
     /// Converts a linear color component to gamma-corrected space.
-    fn linear_to_gamma(linear_component : f64) -> f64 {
+    fn linear_to_gamma(linear_component: f64) -> f64 {
         if linear_component > 0.0 {
             linear_component.sqrt()
         } else {
@@ -264,7 +262,7 @@ impl Vec3 {
         let r = Self::linear_to_gamma(self.x);
         let g = Self::linear_to_gamma(self.y);
         let b = Self::linear_to_gamma(self.z);
-        
+
         let intenstity = Interval::new(0.0, 0.999);
         let ir = (256.0 * intenstity.clamp(r)) as i32;
         let ig = (256.0 * intenstity.clamp(g)) as i32;
