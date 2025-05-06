@@ -15,7 +15,7 @@ impl Metal {
         let reflected = 
             ray_in.direction.reflect(&hit_record.normal).normalize() 
             + self.fuzz * Vec3::random_unit(rng);
-        let scattered = Ray::new(hit_record.point, reflected);
+        let scattered = Ray::new_time(hit_record.point, reflected, ray_in.time);
 
 
         if scattered.direction.dot(&hit_record.normal) > 0.0 {

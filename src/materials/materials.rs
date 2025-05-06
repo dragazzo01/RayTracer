@@ -26,7 +26,7 @@ impl Materials {
 
     pub fn scatter(&self, ray : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
         match self {
-            Materials::Lambertian(l) => l.scatter(hit_record, rng),
+            Materials::Lambertian(l) => l.scatter(ray, hit_record, rng),
             Materials::Dielectric(d) => d.scatter(ray, hit_record, rng),
             Materials::Metal(m) => m.scatter(ray, hit_record, rng),
         }

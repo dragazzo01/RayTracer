@@ -10,7 +10,7 @@ impl Lambertian {
         Self {albedo}
     }
 
-    pub(crate) fn scatter (&self, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
+    pub(crate) fn scatter (&self, ray_in : &Ray, hit_record : &HitRecord, rng : &mut ThreadRng) -> Option<(Color3, Ray)> {
         let scatter_direction = {
             let res = hit_record.normal + Vec3::random_unit(rng);
             if res.near_zero() {
@@ -21,7 +21,7 @@ impl Lambertian {
         };
         
 
-        let scattered = Ray::new(hit_record.point, scatter_direction);
+        let scattered = Ray::new_time(hit_record.point, scatter_direction, ray_in.time);
         Some((self.albedo, scattered))
     }
 }

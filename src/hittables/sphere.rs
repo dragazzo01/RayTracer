@@ -1,26 +1,40 @@
 use crate::prelude::*;
+use crate::hittables::aabb::AABB;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Sphere {
     pub center : Ray,
     pub radius : f64,
-    mat : Materials,
-    
+    pub mat : Materials,
+    pub bbox : AABB,
 }
 
 impl Sphere {
     //static Shere
     pub fn new_static(center : Point3, radius : f64, mat : Materials) -> Self {
-        Self {center : Ray::new(center, Vec3::zero()), radius, mat}
+        let rvec  = Vec3::new(radius, radius, radius);
+
+        Self {
+            center : Ray::new(center, Vec3::zero()), 
+            radius, 
+            mat,
+            rvec : AABB::new(center - rvec, center + rvec),
+        }
     }
 
 
     #[allow(dead_code)]
     pub fn new_moving(center_start : Point3, center_end : Point3, radius : f64, mat : Materials) -> Self {
+        let center = Ray::new(center_start, center_end - center_start);
+        
+        let rvec = Vec3::new(radius, radius, radius);
+        let box1 = AABB::new(center.at(0) - rvec, center.at(0) + rvec);
+        let box2 = AABB::new(center.at(1) - rvec, center.at(1) + rvec);
         Self {
-            center : Ray::new(center_start, center_end - center_start),
+            center,
             radius, 
-            mat
+            mat,
+            bbox : AABB::from_boxes(box1, box2),
         }
     }
 

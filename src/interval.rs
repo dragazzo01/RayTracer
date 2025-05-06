@@ -12,6 +12,12 @@ impl Interval {
         Self {min, max}
     }
 
+    pub fn combine(a : Self, b : Self) -> Self {
+        let min = if a.min <= b.min {a.min} else {b.min};
+        let max = if a.max >= a.max {a.max} else {b.max};
+        Self {min, max}
+    }
+
 
     pub fn universe() -> Self {
         Self {
@@ -24,6 +30,14 @@ impl Interval {
         Self {
             min : INF,
             max : NEG_INF,
+        }
+    }
+
+    pub fn expand(&self, delta : f64) -> Self {
+        let padding = delta / 2.;
+        Self {
+            min : self.min - padding, 
+            max : self.max + padding,
         }
     }
 

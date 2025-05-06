@@ -30,7 +30,7 @@ impl Dielectric {
             unit_direction.refract(&hit_record.normal, ri)
         };
         
-        let scattered = Ray::new(hit_record.point, direction);
+        let scattered = Ray::new_time(hit_record.point, direction, ray_in.time);
         Some((Color3::new(1.0, 1.0, 1.0), scattered))
     }
 }
