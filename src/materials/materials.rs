@@ -5,7 +5,7 @@ use crate::prelude::*;
 
 /// Represents the different types of materials that can be used in the ray tracer.
 /// Each material has its own scattering behavior.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum Materials {
     /// A Lambertian (diffuse) material.
     Lambertian(Lambertian),
@@ -25,8 +25,12 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Lambertian material.
-    pub fn lambertian(albedo: Color3) -> Self {
-        Self::Lambertian(Lambertian::new(albedo))
+    pub fn lambertian_solid(albedo: Color3) -> Arc<Self> {
+        Arc::new(Self::Lambertian(Lambertian::solid(albedo)))
+    }
+
+    pub fn lambertian(texture: Arc<Textures>) -> Arc<Self> {
+        Arc::new(Self::Lambertian(Lambertian::new(texture)))
     }
 
     /// Creates a new Metallic material.
@@ -39,9 +43,9 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Metallic material.
-    pub fn metal(albedo: Color3, fuzz: f64) -> Self {
+    pub fn metal(albedo: Color3, fuzz: f64) -> Arc<Self> {
         let fuzz = if fuzz < 1.0 { fuzz } else { 1.0 };
-        Self::Metal(Metal::new(albedo, fuzz))
+        Arc::new(Self::Metal(Metal::new(albedo, fuzz)))
     }
 
     /// Creates a new Dielectric material.
@@ -53,8 +57,8 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Dielectric material.
-    pub fn dielectric(refraction_index: f64) -> Self {
-        Self::Dielectric(Dielectric::new(refraction_index))
+    pub fn dielectric(refraction_index: f64) -> Arc<Self> {
+        Arc::new(Self::Dielectric(Dielectric::new(refraction_index)))
     }
 
     /// Computes how a ray scatters when it hits the material.

@@ -8,12 +8,14 @@ use crate::prelude::*;
 /// - `t`: The ray parameter at the intersection.
 /// - `mat`: The material of the surface hit.
 /// - `front_face`: A boolean indicating if the ray hit the front face of the surface.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
     pub t: f64,
-    pub mat: Materials,
+    pub u: f64,
+    pub v: f64,
+    pub mat: Arc<Materials>,
     pub front_face: bool,
 }
 

@@ -87,7 +87,7 @@ impl AABB {
     ///
     /// # Returns
     /// An `AABB` that encloses both input AABBs.
-    pub fn from_boxes(a: AABB, b: AABB) -> Self {
+    pub fn from_boxes(a: &AABB, b: &AABB) -> Self {
         let x = Interval::combine(a.x, b.x);
         let y = Interval::combine(a.y, b.y);
         let z = Interval::combine(a.z, b.z);

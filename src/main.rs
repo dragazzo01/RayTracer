@@ -7,6 +7,7 @@ mod prelude;
 mod random;
 mod ray;
 mod vec3;
+mod texture;
 
 use crate::camera::{CamArgs, Camera};
 use crate::hittables::hittables::HittableList;
@@ -14,15 +15,15 @@ use crate::prelude::*;
 
 fn main() -> Result<(), Error> {
     //_ = temp1();
-    //_ = final1();
-    _ = temp2();
+    _ = final1();
+    //_ = temp2();
     Ok(())
 }
 
 #[allow(dead_code)]
 fn temp1() -> Result<(), Error> {
-    let mat_ground = Materials::lambertian(Color3::new(0.8, 0.8, 0.0));
-    let mat_center = Materials::lambertian(Color3::new(0.1, 0.2, 0.5));
+    let mat_ground = Materials::lambertian_solid(Color3::new(0.8, 0.8, 0.0));
+    let mat_center = Materials::lambertian_solid(Color3::new(0.1, 0.2, 0.5));
     let mat_left = Materials::dielectric(1.50);
     let mat_bubble = Materials::dielectric(1.00 / 1.50);
     let mat_right = Materials::metal(Color3::new(0.8, 0.6, 0.2), 1.0);
@@ -58,7 +59,7 @@ fn temp1() -> Result<(), Error> {
 fn final1() -> Result<(), Error> {
     let mut world = HittableList::empty();
 
-    let mat_ground = Materials::lambertian(Color3::new(0.5, 0.5, 0.5));
+    let mat_ground = Materials::lambertian_solid(Color3::new(0.5, 0.5, 0.5));
     world.add_static_sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0, mat_ground);
 
     let mut rng = rand::thread_rng();
@@ -75,7 +76,7 @@ fn final1() -> Result<(), Error> {
                 if choose_mat < 0.7 {
                     //diffuse
                     let albedo = Color3::random(&mut rng) * Color3::random(&mut rng);
-                    let mat = Materials::lambertian(albedo);
+                    let mat = Materials::lambertian_solid(albedo);
                     world.add_static_sphere(center, 0.2, mat);
                 } else if choose_mat < 0.85 {
                     //metal
@@ -95,7 +96,7 @@ fn final1() -> Result<(), Error> {
     let mat1 = Materials::dielectric(1.5);
     world.add_static_sphere(Point3::new(0.0, 1.0, 0.0), 1.0, mat1);
 
-    let mat2 = Materials::lambertian(Color3::new(0.4, 0.2, 0.1));
+    let mat2 = Materials::lambertian_solid(Color3::new(0.4, 0.2, 0.1));
     world.add_static_sphere(Point3::new(-4.0, 1.0, 0.0), 1.0, mat2);
 
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
@@ -114,7 +115,7 @@ fn final1() -> Result<(), Error> {
         v_up: Vec3::new(0., 1., 0.),
         defocus_angle: 0.6,
         focus_dist: 10.,
-        thread_num: 8,
+        thread_num: 6,
     };
 
     let camera = Camera::initilize(args);
@@ -126,10 +127,14 @@ fn final1() -> Result<(), Error> {
 fn temp2() -> Result<(), Error> {
     let mut world = HittableList::empty();
 
-    let mat_ground = Materials::lambertian(Color3::new(0.5, 0.5, 0.5));
+    let tex_even = Textures::rgb(0.2, 0.3, 0.1);
+    let tex_odd = Textures::rgb(0.9, 0.9, 0.9);
+    let tex_ground = Textures::checker(0.32, tex_even, tex_odd);
+    let mat_ground = Materials::lambertian(tex_ground);
     world.add_static_sphere(Point3::new(0.0, -1000.0, 0.0), 1000.0, mat_ground);
 
     let mut rng = rand::thread_rng();
+    
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat = gen_01(&mut rng);
@@ -143,15 +148,18 @@ fn temp2() -> Result<(), Error> {
                 if choose_mat < 0.8 {
                     //diffuse
                     let albedo = Color3::random(&mut rng) * Color3::random(&mut rng);
-                    let mat = Materials::lambertian(albedo);
+                    let diffuse_mat = Materials::lambertian_solid(albedo);
+        
                     let center2 = center + Vec3::new(0., gen_bound(0., 0.5, &mut rng), 0.);
-                    world.add_moving_sphere(center, center2, 0.2, mat);
-                    //world.add_static_sphere(center, 0.2, mat);
+                    world.add_moving_sphere(center, center2, 0.2, diffuse_mat);
+                    
+                    //world.add_static_sphere(center, 0.2, diffuse_mat);
                 } else if choose_mat < 0.95 {
                     //metal
                     let albedo = Color3::random_bound(0.5, 1.0, &mut rng);
                     let fuzz = gen_bound(0.0, 0.5, &mut rng);
                     let mat = Materials::metal(albedo, fuzz);
+                    
                     world.add_static_sphere(center, 0.2, mat);
                 } else {
                     //glass
@@ -165,7 +173,7 @@ fn temp2() -> Result<(), Error> {
     let mat1 = Materials::dielectric(1.5);
     world.add_static_sphere(Point3::new(0.0, 1.0, 0.0), 1.0, mat1);
 
-    let mat2 = Materials::lambertian(Color3::new(0.4, 0.2, 0.1));
+    let mat2 = Materials::lambertian_solid(Color3::new(0.4, 0.2, 0.1));
     world.add_static_sphere(Point3::new(-4.0, 1.0, 0.0), 1.0, mat2);
 
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
@@ -184,7 +192,7 @@ fn temp2() -> Result<(), Error> {
         v_up: Vec3::new(0., 1., 0.),
         defocus_angle: 0.6,
         focus_dist: 10.,
-        thread_num: 4,
+        thread_num: 2,
     };
 
     let camera = Camera::initilize(args);

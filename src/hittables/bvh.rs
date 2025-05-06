@@ -35,12 +35,12 @@ impl BVHNode {
         let span = end - start;
 
         if span == 1 {
-            return Self::Leaf(objects[start]);
+            return Self::Leaf(objects[start].clone());
         }
 
         let mut bbox = AABB::empty();
         for obj in objects.iter() {
-            bbox = AABB::from_boxes(bbox, obj.bounding_box());
+            bbox = AABB::from_boxes(&bbox, &obj.bounding_box());
         }
 
         let axis = bbox.longest_axis();
@@ -134,14 +134,14 @@ impl BVHNode {
     ///
     /// # Returns
     /// The `AABB` representing the bounding box of this node.
-    pub fn bounding_box(&self) -> AABB {
+    pub fn bounding_box(&self) -> &AABB {
         match self {
             Self::Leaf(x) => x.bounding_box(),
             Self::Node {
                 left: _,
                 right: _,
                 bbox,
-            } => *bbox,
+            } => bbox,
         }
     }
 

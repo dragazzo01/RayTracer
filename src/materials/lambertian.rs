@@ -2,10 +2,10 @@ use crate::prelude::*;
 
 /// Represents a Lambertian (diffuse) material.
 /// This material scatters light uniformly in all directions.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct Lambertian {
     /// The albedo (reflectivity) of the material, represented as a color.
-    albedo: Color3,
+    texture: Arc<Textures>,
 }
 
 impl Lambertian {
@@ -18,8 +18,12 @@ impl Lambertian {
     /// # Returns
     ///
     /// A new instance of `Lambertian`.
-    pub(crate) fn new(albedo: Color3) -> Self {
-        Self { albedo }
+    pub(crate) fn solid(albedo: Color3) -> Self {
+        Self { texture : Textures::solid_color(albedo) }
+    }
+
+    pub(crate) fn new(texture: Arc<Textures>) -> Self {
+        Self { texture }
     }
 
     /// Computes how a ray scatters when it hits the Lambertian material.
@@ -49,7 +53,8 @@ impl Lambertian {
             }
         };
 
+        let attenuation = self.texture.value(hit_record.u, hit_record.v, &hit_record.point);
         let scattered = Ray::new_time(hit_record.point, scatter_direction, ray_in.time);
-        Some((self.albedo, scattered))
+        Some((attenuation, scattered))
     }
 }

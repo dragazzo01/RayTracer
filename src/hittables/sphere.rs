@@ -8,11 +8,11 @@ use crate::prelude::*;
 /// - `radius`: The radius of the sphere.
 /// - `mat`: The material of the sphere.
 /// - `bbox`: The bounding box of the sphere.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Sphere {
     pub center: Ray,
     pub radius: f64,
-    pub mat: Materials,
+    pub mat: Arc<Materials>,
     pub bbox: AABB,
 }
 
@@ -26,7 +26,7 @@ impl Sphere {
     ///
     /// # Returns
     /// A new `Sphere` instance.
-    pub fn new_static(center: Point3, radius: f64, mat: Materials) -> Self {
+    pub fn new_static(center: Point3, radius: f64, mat: Arc<Materials>) -> Self {
         let rvec = Vec3::new(radius, radius, radius);
 
         Self {
@@ -52,7 +52,7 @@ impl Sphere {
         center_start: Point3,
         center_end: Point3,
         radius: f64,
-        mat: Materials,
+        mat: Arc<Materials>,
     ) -> Self {
         let center = Ray::new(center_start, center_end - center_start);
 
@@ -63,7 +63,7 @@ impl Sphere {
             center,
             radius,
             mat,
-            bbox: AABB::from_boxes(box1, box2),
+            bbox: AABB::from_boxes(&box1, &box2),
         }
     }
 
@@ -106,8 +106,10 @@ impl Sphere {
             point,
             normal,
             t,
-            mat: self.mat,
+            mat: self.mat.clone(),
             front_face: false,
+            u: 0.0,
+            v: 0.0,
         };
         res.set_face_normal(ray, &normal);
         Some(res)

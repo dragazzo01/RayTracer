@@ -7,7 +7,7 @@ use crate::prelude::*;
 ///
 /// # Variants
 /// - `Sphere`: A hittable sphere.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum Hittables {
     Sphere(Sphere),
 }
@@ -22,7 +22,7 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the static sphere.
-    pub fn new_static_sphere(center: Point3, radius: f64, mat: Materials) -> Self {
+    pub fn new_static_sphere(center: Point3, radius: f64, mat: Arc<Materials>) -> Self {
         Self::Sphere(Sphere::new_static(center, radius, mat))
     }
 
@@ -36,7 +36,7 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the moving sphere.
-    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Materials) -> Self {
+    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) -> Self {
         Self::Sphere(Sphere::new_moving(start, end, radius, mat))
     }
 
@@ -44,9 +44,9 @@ impl Hittables {
     ///
     /// # Returns
     /// An `AABB` representing the bounding box of the object.
-    pub fn bounding_box(&self) -> AABB {
+    pub fn bounding_box(&self) -> &AABB {
         match self {
-            Self::Sphere(s) => s.bbox,
+            Self::Sphere(s) => &s.bbox,
         }
     }
 
@@ -90,8 +90,8 @@ impl HittableList {
     }
 
     fn add(&mut self, object: Hittables) {
+        self.bbox = AABB::from_boxes(&self.bbox, object.bounding_box());
         self.objects.push(object);
-        self.bbox = AABB::from_boxes(self.bbox, object.bounding_box());
     }
 
     /// Adds a static sphere to the hittable list.
@@ -100,7 +100,7 @@ impl HittableList {
     /// - `center`: The center of the sphere as a `Point3`.
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
-    pub fn add_static_sphere(&mut self, center: Point3, radius: f64, mat: Materials) {
+    pub fn add_static_sphere(&mut self, center: Point3, radius: f64, mat: Arc<Materials>) {
         self.add(Hittables::new_static_sphere(center, radius, mat));
     }
 
@@ -112,7 +112,7 @@ impl HittableList {
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
     #[allow(dead_code)]
-    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Materials) {
+    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) {
         self.add(Hittables::new_moving_sphere(start, end, radius, mat));
     }
 
