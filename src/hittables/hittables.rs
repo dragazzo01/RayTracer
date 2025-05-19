@@ -1,6 +1,7 @@
 use crate::hittables::aabb::AABB;
 use crate::hittables::hit_record::HitRecord;
 use crate::hittables::sphere::Sphere;
+use crate::hittables::bvh::BVHNode;
 use crate::prelude::*;
 
 /// Represents a collection of hittable objects in the scene.
@@ -10,6 +11,7 @@ use crate::prelude::*;
 #[derive(Debug, Clone)]
 pub enum Hittables {
     Sphere(Sphere),
+    BVH(Box<BVHNode>),
 }
 
 impl Hittables {
@@ -22,7 +24,7 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the static sphere.
-    pub fn new_static_sphere(center: Point3, radius: f64, mat: Arc<Materials>) -> Self {
+    pub fn new_static_sphere(center: Point3, radius: f64, mat: Materials) -> Self {
         Self::Sphere(Sphere::new_static(center, radius, mat))
     }
 
@@ -36,7 +38,7 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the moving sphere.
-    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) -> Self {
+    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Materials) -> Self {
         Self::Sphere(Sphere::new_moving(start, end, radius, mat))
     }
 
@@ -47,6 +49,7 @@ impl Hittables {
     pub fn bounding_box(&self) -> &AABB {
         match self {
             Self::Sphere(s) => &s.bbox,
+            Self::BVH(s) => s.bounding_box(),
         }
     }
 
@@ -62,6 +65,7 @@ impl Hittables {
     pub fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
         match self {
             Self::Sphere(s) => s.hit(ray, interval),
+            Self::BVH(s) => s.hit(ray, interval),
         }
     }
 }
@@ -100,7 +104,7 @@ impl HittableList {
     /// - `center`: The center of the sphere as a `Point3`.
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
-    pub fn add_static_sphere(&mut self, center: Point3, radius: f64, mat: Arc<Materials>) {
+    pub fn add_static_sphere(&mut self, center: Point3, radius: f64, mat: Materials) {
         self.add(Hittables::new_static_sphere(center, radius, mat));
     }
 
@@ -112,8 +116,12 @@ impl HittableList {
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
     #[allow(dead_code)]
-    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) {
+    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Materials) {
         self.add(Hittables::new_moving_sphere(start, end, radius, mat));
+    }
+
+    pub fn create_bvh(&mut self) -> Hittables {
+        Hittables::BVH(Box::new(BVHNode::from_list(self)))
     }
 
     /// Determines if a ray hits any object in the hittable list.

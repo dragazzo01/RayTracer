@@ -12,12 +12,66 @@ mod texture;
 use crate::camera::{CamArgs, Camera};
 use crate::hittables::hittables::HittableList;
 use crate::prelude::*;
+use crate::hittables::sphere::Sphere;
 
 fn main() -> Result<(), Error> {
-    //_ = temp1();
-    _ = final1();
-    //_ = temp2();
+    let x1 = Sphere::get_sphere_uv(&Point3::new(1., 0., 0.));
+    let x2 = Sphere::get_sphere_uv(&Point3::new(0., 1., 0.));
+    let x3 = Sphere::get_sphere_uv(&Point3::new(0., 0., 1.));
+    let x4 = Sphere::get_sphere_uv(&Point3::new(-1., 0., 0.));
+    let x5 = Sphere::get_sphere_uv(&Point3::new(0., -1., 0.));
+    let x6 = Sphere::get_sphere_uv(&Point3::new(0., 0., -1.));
+
+    println!("<1 0 0> yields {:?}", x1);
+    println!("<0 1 0> yields {:?}", x2);
+    println!("<0 0 1> yields {:?}", x3);
+    println!("<-1 0 0> yields {:?}", x4);
+    println!("<0 -1 0> yields {:?}", x5);
+    println!("<0 0 -1> yields {:?}", x6);
+
+
+
+    match 3 {
+        0 => temp1()?,
+        1 => temp2()?,
+        2 => final1()?,
+        3 => earth()?,
+        _ => temp1()?,
+    }
+
     Ok(())
+}
+
+#[allow(dead_code)]
+fn earth() -> Result<(), Error> {
+    println!("Current working directory: {:?}", std::env::current_dir().unwrap());
+
+
+    let earth_texture =Textures::image("assets/earthmap.jpg");
+    let earth_surface = Materials::lambertian(earth_texture);
+    let mut world = HittableList::empty();
+    world.add_static_sphere(Point3::new(0.,0.,0.), 2., earth_surface);
+
+    let world = world.create_bvh();
+
+    let args = CamArgs {
+        aspect_ratio: 16. / 9.,
+        image_width: 400,
+        samples_per_pixel: 100,
+        max_depth: 50,
+        vfov: 20.,
+        look_from: Point3::new(0.,0.,12.),
+        look_at: Point3::new(0.,0.,0.),
+        v_up: Vec3::new(0.,1.,0.),
+        defocus_angle: 0.,
+        focus_dist: 10.,
+        thread_num: 2,
+    };
+
+    let camera = Camera::initilize(args);
+    let _ = camera.render(world, "images/world.ppm");
+    Ok(())
+  
 }
 
 #[allow(dead_code)]
@@ -35,7 +89,7 @@ fn temp1() -> Result<(), Error> {
     world.add_static_sphere(Vec3::new(-1.0, 0.0, -1.0), 0.4, mat_bubble);
     world.add_static_sphere(Vec3::new(1.0, 0.0, -1.0), 0.5, mat_right);
 
-    let world = BVHNode::from_list(&mut world);
+    let world = world.create_bvh();
 
     let args = CamArgs {
         aspect_ratio: 16. / 9.,
@@ -51,7 +105,7 @@ fn temp1() -> Result<(), Error> {
         thread_num: 4,
     };
     let camera = Camera::initilize(args);
-    let _ = camera.render(&world, "images/temp1.ppm");
+    let _ = camera.render(world, "images/temp1.ppm");
     Ok(())
 }
 
@@ -102,7 +156,7 @@ fn final1() -> Result<(), Error> {
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
     world.add_static_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
-    let world = BVHNode::from_list(&mut world);
+    let world = world.create_bvh();
 
     let args = CamArgs {
         aspect_ratio: 16.0 / 9.0,
@@ -119,7 +173,7 @@ fn final1() -> Result<(), Error> {
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(&world, "images/final1.ppm");
+    let _ = camera.render(world, "images/final1.ppm");
     Ok(())
 }
 
@@ -179,7 +233,7 @@ fn temp2() -> Result<(), Error> {
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
     world.add_static_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
-    let world = BVHNode::from_list(&mut world);
+    let world = world.create_bvh();
 
     let args = CamArgs {
         aspect_ratio: 16.0 / 9.0,
@@ -196,6 +250,6 @@ fn temp2() -> Result<(), Error> {
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(&world, "images/temp2.ppm");
+    let _ = camera.render(world, "images/temp2.ppm");
     Ok(())
 }

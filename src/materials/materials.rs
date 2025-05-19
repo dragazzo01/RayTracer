@@ -25,12 +25,12 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Lambertian material.
-    pub fn lambertian_solid(albedo: Color3) -> Arc<Self> {
-        Arc::new(Self::Lambertian(Lambertian::solid(albedo)))
+    pub fn lambertian_solid(albedo: Color3) -> Self {
+        Self::Lambertian(Lambertian::solid(albedo))
     }
 
-    pub fn lambertian(texture: Arc<Textures>) -> Arc<Self> {
-        Arc::new(Self::Lambertian(Lambertian::new(texture)))
+    pub fn lambertian(texture: Arc<Textures>) -> Self {
+        Self::Lambertian(Lambertian::new(texture))
     }
 
     /// Creates a new Metallic material.
@@ -43,9 +43,9 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Metallic material.
-    pub fn metal(albedo: Color3, fuzz: f64) -> Arc<Self> {
+    pub fn metal(albedo: Color3, fuzz: f64) -> Self {
         let fuzz = if fuzz < 1.0 { fuzz } else { 1.0 };
-        Arc::new(Self::Metal(Metal::new(albedo, fuzz)))
+        Self::Metal(Metal::new(albedo, fuzz))
     }
 
     /// Creates a new Dielectric material.
@@ -57,8 +57,8 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Dielectric material.
-    pub fn dielectric(refraction_index: f64) -> Arc<Self> {
-        Arc::new(Self::Dielectric(Dielectric::new(refraction_index)))
+    pub fn dielectric(refraction_index: f64) -> Self {
+        Self::Dielectric(Dielectric::new(refraction_index))
     }
 
     /// Computes how a ray scatters when it hits the material.

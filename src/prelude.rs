@@ -9,7 +9,7 @@ pub use std::sync::Arc;
 
 //internal
 pub use crate::constants::*;
-pub use crate::hittables::bvh::BVHNode;
+pub use crate::hittables::hittables::Hittables;
 pub use crate::hittables::hit_record::HitRecord;
 pub use crate::interval::Interval;
 pub use crate::materials::materials::Materials;

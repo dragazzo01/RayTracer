@@ -12,7 +12,7 @@ use crate::prelude::*;
 pub struct Sphere {
     pub center: Ray,
     pub radius: f64,
-    pub mat: Arc<Materials>,
+    pub mat: Materials,
     pub bbox: AABB,
 }
 
@@ -26,7 +26,7 @@ impl Sphere {
     ///
     /// # Returns
     /// A new `Sphere` instance.
-    pub fn new_static(center: Point3, radius: f64, mat: Arc<Materials>) -> Self {
+    pub fn new_static(center: Point3, radius: f64, mat: Materials) -> Self {
         let rvec = Vec3::new(radius, radius, radius);
 
         Self {
@@ -52,7 +52,7 @@ impl Sphere {
         center_start: Point3,
         center_end: Point3,
         radius: f64,
-        mat: Arc<Materials>,
+        mat: Materials,
     ) -> Self {
         let center = Ray::new(center_start, center_end - center_start);
 
@@ -65,6 +65,13 @@ impl Sphere {
             mat,
             bbox: AABB::from_boxes(&box1, &box2),
         }
+    }
+
+    pub fn get_sphere_uv(point : &Point3) -> (f64, f64) {
+        let theta = (-point.y).acos();
+        let phi = (-point.z).atan2(point.x) + PI;
+
+        (phi / (2.*PI), theta / PI)
     }
 
     /// Determines if a ray hits the sphere.
@@ -102,14 +109,16 @@ impl Sphere {
         let point = ray.at(root);
         let normal = (point - center) / self.radius;
 
+        let (u, v) = Self::get_sphere_uv(&normal);
+
         let mut res = HitRecord {
             point,
             normal,
             t,
             mat: self.mat.clone(),
             front_face: false,
-            u: 0.0,
-            v: 0.0,
+            u,
+            v,
         };
         res.set_face_normal(ray, &normal);
         Some(res)

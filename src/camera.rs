@@ -145,7 +145,7 @@ impl Camera {
     /// # Returns
     ///
     /// The computed color as a `Color3`.
-    fn ray_color(ray: &Ray, world: &BVHNode, depth: i32, rng: &mut ThreadRng) -> Color3 {
+    fn ray_color(ray: &Ray, world: &Hittables, depth: i32, rng: &mut ThreadRng) -> Color3 {
         if depth <= 0 {
             return Color3::zero();
         }
@@ -231,7 +231,7 @@ impl Camera {
     /// # Returns
     ///
     /// A vector of `Color3` values representing the colors of the pixels in the scan line.
-    fn render_line(&self, world: &BVHNode, j: usize, rng: &mut ThreadRng) -> Vec<Color3> {
+    fn render_line(&self, world: &Hittables, j: usize, rng: &mut ThreadRng) -> Vec<Color3> {
         let mut scan_line = Vec::new();
         for i in 0..self.image_width {
             let mut pixel_color = Color3::new(0.0, 0.0, 0.0);
@@ -254,7 +254,7 @@ impl Camera {
     /// # Returns
     ///
     /// A `Result` indicating success or failure.
-    pub fn render(&self, world: &BVHNode, path: &str) -> Result<(), Error> {
+    pub fn render(&self, world: Hittables, path: &str) -> Result<(), Error> {
         let mut handles = vec![];
 
         let progress_bar = Arc::new(ProgressBar::new(self.image_height as u64));
