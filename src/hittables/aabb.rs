@@ -173,5 +173,16 @@ impl AABB {
 
         Some(hit_int)
     }
+
+
+    pub fn pad_to_minimums(&mut self) {
+        // Adjust the AABB so that no side is narrower than some delta, padding if necessary.
+
+        let delta = 0.0001;
+        if self.x.size() < delta {self.x.expand(delta);}
+        if self.y.size() < delta {self.y.expand(delta);}
+        if self.z.size() < delta {self.z.expand(delta);}
+    }
+
 }
     

@@ -12,30 +12,14 @@ mod texture;
 use crate::camera::{CamArgs, Camera};
 use crate::hittables::hittables::HittableList;
 use crate::prelude::*;
-use crate::hittables::sphere::Sphere;
 
 fn main() -> Result<(), Error> {
-    let x1 = Sphere::get_sphere_uv(&Point3::new(1., 0., 0.));
-    let x2 = Sphere::get_sphere_uv(&Point3::new(0., 1., 0.));
-    let x3 = Sphere::get_sphere_uv(&Point3::new(0., 0., 1.));
-    let x4 = Sphere::get_sphere_uv(&Point3::new(-1., 0., 0.));
-    let x5 = Sphere::get_sphere_uv(&Point3::new(0., -1., 0.));
-    let x6 = Sphere::get_sphere_uv(&Point3::new(0., 0., -1.));
-
-    println!("<1 0 0> yields {:?}", x1);
-    println!("<0 1 0> yields {:?}", x2);
-    println!("<0 0 1> yields {:?}", x3);
-    println!("<-1 0 0> yields {:?}", x4);
-    println!("<0 -1 0> yields {:?}", x5);
-    println!("<0 0 -1> yields {:?}", x6);
-
-
-
-    match 3 {
+    match 4 {
         0 => temp1()?,
         1 => temp2()?,
         2 => final1()?,
         3 => earth()?,
+        4 => quads()?,
         _ => temp1()?,
     }
 
@@ -43,10 +27,47 @@ fn main() -> Result<(), Error> {
 }
 
 #[allow(dead_code)]
+fn quads() -> Result<(), Error> {
+    let mut world = HittableList::empty();
+
+    // Materials
+    let left_red     = Materials::lambertian_solid(Color3::new(1.0, 0.2, 0.2));
+    let back_green   = Materials::lambertian_solid(Color3::new(0.2, 1.0, 0.2));
+    let right_blue   = Materials::lambertian_solid(Color3::new(0.2, 0.2, 1.0));
+    let upper_orange = Materials::lambertian_solid(Color3::new(1.0, 0.5, 0.0));
+    let lower_teal   = Materials::lambertian_solid(Color3::new(0.2, 0.8, 0.8));
+
+    // Quads
+    world.add_quad(Point3::new(-3.,-2., 5.), Vec3::new(0., 0.,-4.), Vec3::new(0., 4., 0.), left_red);
+    world.add_quad(Point3::new(-2.,-2., 0.), Vec3::new(4., 0., 0.), Vec3::new(0., 4., 0.), back_green);
+    world.add_quad(Point3::new( 3.,-2., 1.), Vec3::new(0., 0., 4.), Vec3::new(0., 4., 0.), right_blue);
+    world.add_quad(Point3::new(-2., 3., 1.), Vec3::new(4., 0., 0.), Vec3::new(0., 0., 4.), upper_orange);
+    world.add_quad(Point3::new(-2.,-3., 5.), Vec3::new(4., 0., 0.), Vec3::new(0., 0.,-4.), lower_teal);
+
+    let world = world.create_bvh();
+
+    let args = CamArgs {
+        aspect_ratio: 1.,
+        image_width: 400,
+        samples_per_pixel: 100,
+        max_depth: 50,
+        vfov: 80.,
+        look_from: Point3::new(0.,0.,9.),
+        look_at: Point3::new(0.,0.,0.),
+        v_up: Vec3::new(0.,1.,0.),
+        defocus_angle: 0.,
+        focus_dist: 10.,
+        thread_num: 2,
+    };
+
+    let camera = Camera::initilize(args);
+    let _ = camera.render(world, "images/quads.ppm");
+    Ok(())
+  
+}
+
+#[allow(dead_code)]
 fn earth() -> Result<(), Error> {
-    println!("Current working directory: {:?}", std::env::current_dir().unwrap());
-
-
     let earth_texture =Textures::image("assets/earthmap.jpg");
     let earth_surface = Materials::lambertian(earth_texture);
     let mut world = HittableList::empty();

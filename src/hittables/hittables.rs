@@ -1,6 +1,7 @@
 use crate::hittables::aabb::AABB;
 use crate::hittables::hit_record::HitRecord;
 use crate::hittables::sphere::Sphere;
+use crate::hittables::quad::Quad;
 use crate::hittables::bvh::BVHNode;
 use crate::prelude::*;
 
@@ -12,6 +13,7 @@ use crate::prelude::*;
 pub enum Hittables {
     Sphere(Sphere),
     BVH(Box<BVHNode>),
+    Quad(Quad)
 }
 
 impl Hittables {
@@ -42,6 +44,10 @@ impl Hittables {
         Self::Sphere(Sphere::new_moving(start, end, radius, mat))
     }
 
+    pub fn new_quad(q : Point3, u : Vec3, v : Vec3, mat : Materials) -> Self {
+        Self::Quad(Quad::new(q, u, v, mat))
+    }
+
     /// Returns the bounding box of the hittable object.
     ///
     /// # Returns
@@ -50,6 +56,7 @@ impl Hittables {
         match self {
             Self::Sphere(s) => &s.bbox,
             Self::BVH(s) => s.bounding_box(),
+            Self::Quad(s) => s.bounding_box(),
         }
     }
 
@@ -66,6 +73,7 @@ impl Hittables {
         match self {
             Self::Sphere(s) => s.hit(ray, interval),
             Self::BVH(s) => s.hit(ray, interval),
+            Self::Quad(s) => s.hit(ray, interval),
         }
     }
 }
@@ -118,6 +126,10 @@ impl HittableList {
     #[allow(dead_code)]
     pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Materials) {
         self.add(Hittables::new_moving_sphere(start, end, radius, mat));
+    }
+
+    pub fn add_quad(&mut self, q : Point3, u : Vec3, v : Vec3, mat : Materials) {
+        self.add(Hittables::new_quad(q, u, v, mat))
     }
 
     pub fn create_bvh(&mut self) -> Hittables {

@@ -74,12 +74,10 @@ impl Interval {
     /// # Returns
     ///
     /// For original `Interval : [x, y]` returns `[x - delta/2, y + delta/2]`.
-    pub fn expand(&self, delta: f64) -> Self {
+    pub fn expand(&mut self, delta: f64) {
         let padding = delta / 2.;
-        Self {
-            min: self.min - padding,
-            max: self.max + padding,
-        }
+        self.min -= padding;
+        self.max += padding;
     }
 
     /// Calculates the size (length) of the interval.

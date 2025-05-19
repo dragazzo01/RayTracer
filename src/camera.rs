@@ -255,6 +255,11 @@ impl Camera {
     ///
     /// A `Result` indicating success or failure.
     pub fn render(&self, world: Hittables, path: &str) -> Result<(), Error> {
+        let lines = self.calculate_img(world);
+        self.write_pixels(lines, path)
+    }
+
+    pub fn calculate_img(&self, world: Hittables) -> Vec<Vec<Color3>> {
         let mut handles = vec![];
 
         let progress_bar = Arc::new(ProgressBar::new(self.image_height as u64));
@@ -310,7 +315,10 @@ impl Camera {
         }
 
         progress_bar.finish_with_message("All done!");
+        lines
+    }
 
+    fn write_pixels(&self, img : Vec<Vec<Color3>>, path : &str) -> Result<(), Error> {
         // Creates or overwrites the file
         println!("Writing to File");
         let mut file = File::create(path)?;
@@ -319,7 +327,7 @@ impl Camera {
             format!("P3\n{} {}\n255\n", self.image_width, self.image_height).as_bytes(),
         )?;
 
-        for line in lines.iter() {
+        for line in img.iter() {
             for pixel in line.iter() {
                 pixel.writeln_color(&mut file)?;
             }
