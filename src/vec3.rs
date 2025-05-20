@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use std::ops::{Add, Div, Index, Mul, Sub};
+use std::ops::{Add, Div, Index, IndexMut, Mul, Sub};
 
 /// A 3D vector with `x`, `y`, and `z` components.
 ///
@@ -114,6 +114,17 @@ impl Index<usize> for Vec3 {
             0 => &self.x,
             1 => &self.y,
             2 => &self.z,
+            _ => panic!("Index out of bounds for Vec3"),
+        }
+    }
+}
+
+impl IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
             _ => panic!("Index out of bounds for Vec3"),
         }
     }

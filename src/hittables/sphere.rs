@@ -1,4 +1,3 @@
-use crate::hittables::aabb::AABB;
 use crate::prelude::*;
 
 /// Represents a sphere that can be static or moving in the scene.
@@ -12,7 +11,7 @@ use crate::prelude::*;
 pub struct Sphere {
     pub center: Ray,
     pub radius: f64,
-    pub mat: Materials,
+    pub mat: Arc<Materials>,
     pub bbox: AABB,
 }
 
@@ -26,7 +25,7 @@ impl Sphere {
     ///
     /// # Returns
     /// A new `Sphere` instance.
-    pub fn new_static(center: Point3, radius: f64, mat: Materials) -> Self {
+    pub fn new_static(center: Point3, radius: f64, mat: Arc<Materials>) -> Self {
         let rvec = Vec3::new(radius, radius, radius);
 
         Self {
@@ -52,7 +51,7 @@ impl Sphere {
         center_start: Point3,
         center_end: Point3,
         radius: f64,
-        mat: Materials,
+        mat: Arc<Materials>,
     ) -> Self {
         let center = Ray::new(center_start, center_end - center_start);
 
@@ -67,7 +66,11 @@ impl Sphere {
         }
     }
 
-    pub fn get_sphere_uv(point : &Point3) -> (f64, f64) {
+    pub fn bounding_box(&self) -> &AABB {
+        &self.bbox
+    }
+
+    fn get_sphere_uv(point : &Point3) -> (f64, f64) {
         let theta = (-point.y).acos();
         let phi = (-point.z).atan2(point.x) + PI;
 
@@ -115,7 +118,7 @@ impl Sphere {
             point,
             normal,
             t,
-            mat: self.mat.clone(),
+            mat: Arc::clone(&self.mat),
             front_face: false,
             u,
             v,

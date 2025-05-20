@@ -1,9 +1,10 @@
-use crate::hittables::aabb::AABB;
-use crate::hittables::hit_record::HitRecord;
 use crate::hittables::sphere::Sphere;
 use crate::hittables::quad::Quad;
 use crate::hittables::bvh::BVHNode;
+use crate::hittables::translation::Translate;
 use crate::prelude::*;
+
+use super::translation::RotateY;
 
 /// Represents a collection of hittable objects in the scene.
 ///
@@ -13,7 +14,9 @@ use crate::prelude::*;
 pub enum Hittables {
     Sphere(Sphere),
     BVH(Box<BVHNode>),
-    Quad(Quad)
+    Quad(Quad),
+    Translate(Translate),
+    RotY(RotateY),
 }
 
 impl Hittables {
@@ -26,8 +29,8 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the static sphere.
-    pub fn new_static_sphere(center: Point3, radius: f64, mat: Materials) -> Self {
-        Self::Sphere(Sphere::new_static(center, radius, mat))
+    pub fn new_static_sphere(center: Point3, radius: f64, mat: Arc<Materials>) -> Arc<Self> {
+        Arc::new(Self::Sphere(Sphere::new_static(center, radius, mat)))
     }
 
     /// Creates a new moving sphere.
@@ -40,12 +43,20 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the moving sphere.
-    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Materials) -> Self {
-        Self::Sphere(Sphere::new_moving(start, end, radius, mat))
+    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) -> Arc<Self> {
+        Arc::new(Self::Sphere(Sphere::new_moving(start, end, radius, mat)))
     }
 
-    pub fn new_quad(q : Point3, u : Vec3, v : Vec3, mat : Materials) -> Self {
-        Self::Quad(Quad::new(q, u, v, mat))
+    pub fn new_quad(q : Point3, u : Vec3, v : Vec3, mat : Arc<Materials>) -> Arc<Self> {
+        Arc::new(Self::Quad(Quad::new(q, u, v, mat)))
+    }
+
+    pub fn translate(object: Arc<Self>, offset: Vec3) -> Arc<Self> {
+        Arc::new(Self::Translate(Translate::new(object, offset)))
+    }
+
+    pub fn rotate_y(object: Arc<Self>, degree: f64) -> Arc<Self> {
+        Arc::new(Self::RotY(RotateY::new(object, degree)))
     }
 
     /// Returns the bounding box of the hittable object.
@@ -54,9 +65,11 @@ impl Hittables {
     /// An `AABB` representing the bounding box of the object.
     pub fn bounding_box(&self) -> &AABB {
         match self {
-            Self::Sphere(s) => &s.bbox,
-            Self::BVH(s) => s.bounding_box(),
-            Self::Quad(s) => s.bounding_box(),
+            Self::Sphere(obj) => obj.bounding_box(),
+            Self::BVH(obj) => obj.bounding_box(),
+            Self::Quad(obj) => obj.bounding_box(),
+            Self::Translate(obj) => obj.bounding_box(),
+            Self::RotY(obj) => obj.bounding_box(),
         }
     }
 
@@ -71,9 +84,11 @@ impl Hittables {
     /// or `None` if there is no intersection.
     pub fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
         match self {
-            Self::Sphere(s) => s.hit(ray, interval),
-            Self::BVH(s) => s.hit(ray, interval),
-            Self::Quad(s) => s.hit(ray, interval),
+            Self::Sphere(obj) => obj.hit(ray, interval),
+            Self::BVH(obj) => obj.hit(ray, interval),
+            Self::Quad(obj) => obj.hit(ray, interval),
+            Self::Translate(obj) => obj.hit(ray, interval),
+            Self::RotY(obj) => obj.hit(ray, interval),
         }
     }
 }
@@ -85,8 +100,7 @@ impl Hittables {
 /// - `bbox`: The bounding box enclosing all objects in the list.
 #[derive(Debug, Clone)]
 pub struct HittableList {
-    pub objects: Vec<Hittables>,
-    pub bbox: AABB,
+    pub objects: Vec<Arc<Hittables>>,
 }
 
 impl HittableList {
@@ -97,13 +111,35 @@ impl HittableList {
     pub fn empty() -> Self {
         Self {
             objects: Vec::new(),
-            bbox: AABB::universe(),
         }
     }
 
-    fn add(&mut self, object: Hittables) {
-        self.bbox = AABB::from_boxes(&self.bbox, object.bounding_box());
+    fn add(&mut self, object: Arc<Hittables>) {
         self.objects.push(object);
+    }
+
+    pub fn append(&mut self, new:&mut HittableList) {
+        self.objects.append(&mut new.objects);
+    }
+
+    pub fn translate(&self, offset: Vec3) -> Self {
+        Self {
+            objects: self.objects
+            .clone()
+            .into_iter().
+            map(|x| Hittables::translate(x, offset))
+            .collect()
+        }
+    }
+
+    pub fn rotate_y(&self, degree: f64) -> Self {
+        Self {
+            objects: self.objects
+            .clone()
+            .into_iter().
+            map(|x| Hittables::rotate_y(x, degree))
+            .collect()
+        }
     }
 
     /// Adds a static sphere to the hittable list.
@@ -112,7 +148,7 @@ impl HittableList {
     /// - `center`: The center of the sphere as a `Point3`.
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
-    pub fn add_static_sphere(&mut self, center: Point3, radius: f64, mat: Materials) {
+    pub fn add_sphere(&mut self, center: Point3, radius: f64, mat: Arc<Materials>) {
         self.add(Hittables::new_static_sphere(center, radius, mat));
     }
 
@@ -124,12 +160,16 @@ impl HittableList {
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
     #[allow(dead_code)]
-    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Materials) {
+    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) {
         self.add(Hittables::new_moving_sphere(start, end, radius, mat));
     }
 
-    pub fn add_quad(&mut self, q : Point3, u : Vec3, v : Vec3, mat : Materials) {
+    pub fn add_quad(&mut self, q : Point3, u : Vec3, v : Vec3, mat : Arc<Materials>) {
         self.add(Hittables::new_quad(q, u, v, mat))
+    }
+
+    pub fn create_box(a : Point3, b : Point3, mat : Arc<Materials>) -> Self {
+        Quad::create_box(a, b, mat)
     }
 
     pub fn create_bvh(&mut self) -> Hittables {

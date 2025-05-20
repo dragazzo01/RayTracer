@@ -1,6 +1,7 @@
 use crate::materials::dielectric::Dielectric;
 use crate::materials::lambertian::Lambertian;
 use crate::materials::metal::Metal;
+use crate::materials::emmiter::Diffuse;
 use crate::prelude::*;
 
 /// Represents the different types of materials that can be used in the ray tracer.
@@ -13,6 +14,8 @@ pub enum Materials {
     Dielectric(Dielectric),
     /// A Metallic material.
     Metal(Metal),
+    /// Diffuse emitter
+    Diffuse(Diffuse),
 }
 
 impl Materials {
@@ -25,12 +28,12 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Lambertian material.
-    pub fn lambertian_solid(albedo: Color3) -> Self {
-        Self::Lambertian(Lambertian::solid(albedo))
+    pub fn lambertian_solid(albedo: Color3) -> Arc<Self> {
+        Arc::new(Self::Lambertian(Lambertian::solid(albedo)))
     }
 
-    pub fn lambertian(texture: Arc<Textures>) -> Self {
-        Self::Lambertian(Lambertian::new(texture))
+    pub fn lambertian(texture: Arc<Textures>) -> Arc<Self> {
+        Arc::new(Self::Lambertian(Lambertian::new(texture)))
     }
 
     /// Creates a new Metallic material.
@@ -43,9 +46,9 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Metallic material.
-    pub fn metal(albedo: Color3, fuzz: f64) -> Self {
+    pub fn metal(albedo: Color3, fuzz: f64) -> Arc<Self> {
         let fuzz = if fuzz < 1.0 { fuzz } else { 1.0 };
-        Self::Metal(Metal::new(albedo, fuzz))
+        Arc::new(Self::Metal(Metal::new(albedo, fuzz)))
     }
 
     /// Creates a new Dielectric material.
@@ -57,8 +60,19 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Dielectric material.
-    pub fn dielectric(refraction_index: f64) -> Self {
-        Self::Dielectric(Dielectric::new(refraction_index))
+    pub fn dielectric(refraction_index: f64) -> Arc<Self> {
+        Arc::new(Self::Dielectric(Dielectric::new(refraction_index)))
+    }
+
+    pub fn emmiter(texture : Arc<Textures>) -> Arc<Self> {
+        Arc::new(Self::Diffuse(Diffuse::new(texture)))
+    }
+
+    pub fn emitted(&self, u : f64, v : f64, p : &Point3) -> Color3 {
+        match self {
+            Self::Diffuse(d) => d.emitted(u, v, p),
+            _ => Color3::zero(),
+        }
     }
 
     /// Computes how a ray scatters when it hits the material.
@@ -80,9 +94,10 @@ impl Materials {
         rng: &mut ThreadRng,
     ) -> Option<(Color3, Ray)> {
         match self {
-            Materials::Lambertian(l) => l.scatter(ray, hit_record, rng),
-            Materials::Dielectric(d) => d.scatter(ray, hit_record, rng),
-            Materials::Metal(m) => m.scatter(ray, hit_record, rng),
+            Self::Lambertian(l) => l.scatter(ray, hit_record, rng),
+            Self::Dielectric(d) => d.scatter(ray, hit_record, rng),
+            Self::Metal(m) => m.scatter(ray, hit_record, rng),
+            _ => None,
         }
     }
 }

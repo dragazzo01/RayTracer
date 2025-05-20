@@ -28,6 +28,14 @@ impl AABB {
         Self { x, y, z }
     }
 
+    pub fn offset(&self, offset: Vec3) -> Self {
+        Self {
+            x: self.x.offset(offset.x),
+            y: self.y.offset(offset.y),
+            z: self.z.offset(offset.z),
+        }
+    }
+
     /// Returns an AABB that represents the entire universe.
     ///
     /// # Returns
@@ -185,4 +193,3 @@ impl AABB {
     }
 
 }
-    

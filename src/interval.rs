@@ -80,6 +80,13 @@ impl Interval {
         self.max += padding;
     }
 
+    pub fn offset(&self, offset: f64) -> Self {
+        Self {
+            min: self.min + offset,
+            max: self.max + offset,
+        }
+    }
+
     /// Calculates the size (length) of the interval.
     ///
     /// # Returns

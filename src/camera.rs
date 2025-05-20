@@ -24,6 +24,8 @@ pub struct CamArgs {
     pub defocus_angle: f64,
     /// The focus distance for depth of field effects.
     pub focus_dist: f64,
+
+    pub background : Color3,
     /// The number of threads to use for rendering.
     pub thread_num: usize,
 }
@@ -55,6 +57,8 @@ pub struct Camera {
     defocus_disk_u: Vec3,
     /// The vertical basis vector for the defocus disk.
     defocus_disk_v: Vec3,
+
+    pub background_color : Color3,
     /// The number of threads to use for rendering.
     thread_num: usize,
 }
@@ -80,6 +84,7 @@ impl Camera {
         let v_up = args.v_up;
         let defocus_angle = args.defocus_angle;
         let focus_dist = args.focus_dist;
+        let background_color = args.background;
         let thread_num = args.thread_num;
 
         let image_height = (image_width as f64 / aspect_ratio) as usize;
@@ -129,6 +134,7 @@ impl Camera {
             defocus_angle,
             defocus_disk_u,
             defocus_disk_v,
+            background_color,
             thread_num,
         }
     }
@@ -145,23 +151,23 @@ impl Camera {
     /// # Returns
     ///
     /// The computed color as a `Color3`.
-    fn ray_color(ray: &Ray, world: &Hittables, depth: i32, rng: &mut ThreadRng) -> Color3 {
+    fn ray_color(&self, ray: &Ray, world: &Hittables, depth: i32, rng: &mut ThreadRng) -> Color3 {
         if depth <= 0 {
             return Color3::zero();
         }
 
         if let Some(hr) = world.hit(ray, Interval::new(0.001, INF)) {
-            match hr.mat.scatter(ray, &hr, rng) {
-                Some((attenuation, scattered)) => {
-                    return attenuation * Self::ray_color(&scattered, world, depth - 1, rng)
-                }
-                None => return Color3::zero(),
-            }
-        }
+            let color_from_emission = hr.mat.emitted(hr.u, hr.v, &hr.point);
 
-        let unit_direction = ray.direction.normalize();
-        let a = 0.5 * (unit_direction.y + 1.0);
-        (1.0 - a) * Color3::new(1.0, 1.0, 1.0) + a * Color3::new(0.5, 0.7, 1.0)
+            if let Some((attenuation, scattered)) = hr.mat.scatter(ray, &hr, rng) {
+                let color_from_scatter =  attenuation * self.ray_color(&scattered, world, depth - 1, rng);
+                color_from_emission + color_from_scatter
+            } else {
+                color_from_emission
+            }
+        } else {
+            self.background_color
+        }
     }
 
     /// Generates a random sample within a unit square.
@@ -237,7 +243,7 @@ impl Camera {
             let mut pixel_color = Color3::new(0.0, 0.0, 0.0);
             for _ in 0..self.samples_per_pixel {
                 let r = self.get_ray(i, j, rng);
-                pixel_color = pixel_color + Self::ray_color(&r, world, self.max_depth, rng);
+                pixel_color = pixel_color + self.ray_color(&r, world, self.max_depth, rng);
             }
             scan_line.push(pixel_color * self.pixel_samples_scale);
         }
@@ -248,7 +254,7 @@ impl Camera {
     ///
     /// # Arguments
     ///
-    /// * `world` - The scene represented as a BVH node.
+    /// * `world` - The Hittables object the scene is rendering.
     /// * `path` - The file path to save the rendered image.
     ///
     /// # Returns
