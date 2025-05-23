@@ -22,7 +22,7 @@ impl Translate {
     }
 
     pub fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
-        let offest_ray = Ray::new_time(ray.origin + self.offset, ray.direction, ray.time);
+        let offest_ray = Ray::new_time(ray.origin - self.offset, ray.direction, ray.time);
 
         match self.object.hit(&offest_ray, interval)  {
             Some(mut hr) => {

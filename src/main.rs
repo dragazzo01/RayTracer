@@ -30,6 +30,7 @@ fn main() -> Result<(), Error> {
 
 #[allow(dead_code)]
 fn cornell_box() -> Result<(), Error> {
+    println!("Rendering Cornell Box");
     let mut world = HittableList::empty();
 
     // Materials
@@ -44,32 +45,24 @@ fn cornell_box() -> Result<(), Error> {
     world.add_quad(Point3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), Vec3::new(0.0, 0.0, 555.0), red);
     world.add_quad(Point3::new(343.0, 554.0, 332.0), Vec3::new(-130.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -105.0), light);
     world.add_quad(Point3::new(0.0, 0.0, 0.0), Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 555.0), Arc::clone(&white));
-    //world.add_quad(Point3::new(555.0, 555.0, 555.0), Vec3::new(-555.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -555.0), Arc::clone(&white));
+    world.add_quad(Point3::new(555.0, 555.0, 555.0), Vec3::new(-555.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -555.0), Arc::clone(&white));
     world.add_quad(Point3::new(0.0, 0.0, 555.0), Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), white.clone());
 
-    let mut box1 = HittableList::create_box(Point3::new(130., 0., 65.), Point3::new(295., 165., 230.), white.clone());
-    //let mut box1 = box1.rotate_y(15.);
-    //let mut box1 = box1.translate(Vec3::new(265., 0., 295.));
+    let mut box1 = HittableList::create_box(Point3::zero(), Point3::new(165., 330., 165.), white.clone());
+    box1.rotate_y(15.);
+    box1.translate(Vec3::new(265., 0., 295.));
     world.append(&mut box1);
 
-    //let box2 = HittableList::create_box(Point3::zero(), Point3::new(165.,165.,165.), white.clone());
-    //let box2 = box2.rotate_y(-18.);
-    //let mut box2 = box2.translate(Vec3::new(130., 0., 65.));
-    //world.append(&mut box2);
-
-    // let mut box1 = HittableList::create_box(Point3::new(130., 0., 65.), Point3::new(295., 165., 230.), white.clone());
-    // world.append(&mut box1);
-
-    // let mut box2 = HittableList::create_box(Point3::new(265., 0., 295.), Point3::new(430., 330., 460.), white.clone());
-    // world.append(&mut box2);
-
-    let world = world.create_bvh();
+    let mut box2 = HittableList::create_box(Point3::zero(), Point3::new(165.,165.,165.), white.clone());
+    box2.rotate_y(-18.);
+    box2.translate(Vec3::new(130., 0., 65.));
+    world.append(&mut box2);
 
     // Camera
     let args = CamArgs {
         aspect_ratio: 1.0,
-        image_width: 400,
-        samples_per_pixel: 100,
+        image_width: 600,
+        samples_per_pixel: 200,
         max_depth: 50,
         vfov: 40.0,
         look_from: Point3::new(278.0, 278.0, -800.0),
@@ -77,17 +70,18 @@ fn cornell_box() -> Result<(), Error> {
         v_up: Vec3::new(0.0, 1.0, 0.0),
         defocus_angle: 0.0,
         focus_dist: 10.0,
-        background: Color3::new(0.0, 0.0, 0.0),
+        background: Color3::zero(),
         thread_num: 2,
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(world, "images/cornell_box.ppm");
+    let _ = camera.render(world.create_bvh(), "images/cornell_box.ppm");
     Ok(())
 }
 
 #[allow(dead_code)]
 fn simple_light() -> Result<(), Error> {
+    println!("Rendering Simple Light");
     let mut world = HittableList::empty();
 
     // Materials
@@ -101,7 +95,6 @@ fn simple_light() -> Result<(), Error> {
     world.add_sphere(Vec3::new(0.0, 7., 0.), 2.0, difflight.clone());
     world.add_quad(Point3::new(3., 1., -2.), Vec3::new(2., 0., 0.), Vec3::new(0., 2., 0.), difflight);
 
-    let world = world.create_bvh();
 
     let args = CamArgs {
         aspect_ratio: 16. / 9.,
@@ -116,18 +109,19 @@ fn simple_light() -> Result<(), Error> {
         defocus_angle: 0.,
         focus_dist: 10.,
 
-        background: Color3::new(0.2, 0.3, 0.3),
+        background: Color3::new(0., 0., 0.),
         thread_num: 2,
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(world, "images/simple_light.ppm");
+    let _ = camera.render(world.create_bvh(), "images/simple_light.ppm");
     Ok(())
   
 }
 
 #[allow(dead_code)]
 fn quads() -> Result<(), Error> {
+    println!("Rendering Quads");
     let mut world = HittableList::empty();
 
     // Materials
@@ -143,8 +137,6 @@ fn quads() -> Result<(), Error> {
     world.add_quad(Point3::new( 3.,-2., 1.), Vec3::new(0., 0., 4.), Vec3::new(0., 4., 0.), right_blue);
     world.add_quad(Point3::new(-2., 3., 1.), Vec3::new(4., 0., 0.), Vec3::new(0., 0., 4.), upper_orange);
     world.add_quad(Point3::new(-2.,-3., 5.), Vec3::new(4., 0., 0.), Vec3::new(0., 0.,-4.), lower_teal);
-
-    let world = world.create_bvh();
 
     let args = CamArgs {
         aspect_ratio: 1.,
@@ -162,19 +154,19 @@ fn quads() -> Result<(), Error> {
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(world, "images/quads.ppm");
+    let _ = camera.render(world.create_bvh(), "images/quads.ppm");
     Ok(())
   
 }
 
 #[allow(dead_code)]
 fn earth() -> Result<(), Error> {
+    println!("Rendering Earth");
     let earth_texture =Textures::image("assets/earthmap.jpg");
     let earth_surface = Materials::lambertian(earth_texture);
     let mut world = HittableList::empty();
     world.add_sphere(Point3::new(0.,0.,0.), 2., earth_surface);
 
-    let world = world.create_bvh();
 
     let args = CamArgs {
         aspect_ratio: 16. / 9.,
@@ -192,13 +184,14 @@ fn earth() -> Result<(), Error> {
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(world, "images/world.ppm");
+    let _ = camera.render(world.create_bvh(), "images/world.ppm");
     Ok(())
   
 }
 
 #[allow(dead_code)]
 fn temp1() -> Result<(), Error> {
+    println!("Rendering Temp1");
     let mat_ground = Materials::lambertian_solid(Color3::new(0.8, 0.8, 0.0));
     let mat_center = Materials::lambertian_solid(Color3::new(0.1, 0.2, 0.5));
     let mat_left = Materials::dielectric(1.50);
@@ -211,8 +204,6 @@ fn temp1() -> Result<(), Error> {
     world.add_sphere(Vec3::new(-1.0, 0.0, -1.0), 0.5, mat_left);
     world.add_sphere(Vec3::new(-1.0, 0.0, -1.0), 0.4, mat_bubble);
     world.add_sphere(Vec3::new(1.0, 0.0, -1.0), 0.5, mat_right);
-
-    let world = world.create_bvh();
 
     let args = CamArgs {
         aspect_ratio: 16. / 9.,
@@ -229,12 +220,13 @@ fn temp1() -> Result<(), Error> {
         thread_num: 4,
     };
     let camera = Camera::initilize(args);
-    let _ = camera.render(world, "images/temp1.ppm");
+    let _ = camera.render(world.create_bvh(), "images/temp1.ppm");
     Ok(())
 }
 
 #[allow(dead_code)]
 fn final1() -> Result<(), Error> {
+    println!("Rendering Final 1");
     let mut world = HittableList::empty();
 
     let mat_ground = Materials::lambertian_solid(Color3::new(0.5, 0.5, 0.5));
@@ -280,8 +272,6 @@ fn final1() -> Result<(), Error> {
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
     world.add_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
-    let world = world.create_bvh();
-
     let args = CamArgs {
         aspect_ratio: 16.0 / 9.0,
         image_width: 1200,
@@ -298,12 +288,13 @@ fn final1() -> Result<(), Error> {
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(world, "images/final1.ppm");
+    let _ = camera.render(world.create_bvh(), "images/final1.ppm");
     Ok(())
 }
 
 #[allow(dead_code)]
 fn temp2() -> Result<(), Error> {
+    println!("Rendering Temp2");
     let mut world = HittableList::empty();
 
     let tex_even = Textures::rgb(0.2, 0.3, 0.1);
@@ -358,8 +349,6 @@ fn temp2() -> Result<(), Error> {
     let mat3 = Materials::metal(Color3::new(0.7, 0.6, 0.5), 0.0);
     world.add_sphere(Point3::new(4.0, 1.0, 0.0), 1.0, mat3);
 
-    let world = world.create_bvh();
-
     let args = CamArgs {
         aspect_ratio: 16.0 / 9.0,
         image_width: 400,
@@ -376,6 +365,6 @@ fn temp2() -> Result<(), Error> {
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(world, "images/temp2.ppm");
+    let _ = camera.render(world.create_bvh(), "images/temp2.ppm");
     Ok(())
 }

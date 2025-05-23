@@ -122,24 +122,24 @@ impl HittableList {
         self.objects.append(&mut new.objects);
     }
 
-    pub fn translate(&self, offset: Vec3) -> Self {
-        Self {
-            objects: self.objects
-            .clone()
-            .into_iter().
-            map(|x| Hittables::translate(x, offset))
-            .collect()
-        }
+    pub fn translate(&mut self, offset: Vec3) {
+        self.objects = self.objects
+            .drain(..)
+            .map(|obj| Hittables::translate(
+                obj.clone(),
+                offset,
+            ))
+            .collect();
     }
 
-    pub fn rotate_y(&self, degree: f64) -> Self {
-        Self {
-            objects: self.objects
-            .clone()
-            .into_iter().
-            map(|x| Hittables::rotate_y(x, degree))
-            .collect()
-        }
+    pub fn rotate_y(&mut self, degree: f64) {
+        self.objects = self.objects
+            .drain(..)
+            .map(|obj| Hittables::rotate_y(
+                obj.clone(),
+                degree,
+            ))
+            .collect();
     }
 
     /// Adds a static sphere to the hittable list.
