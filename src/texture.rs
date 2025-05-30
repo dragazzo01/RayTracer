@@ -2,12 +2,14 @@ use crate::prelude::*;
 use image::ImageReader;
 use image::ImageBuffer;
 use image::Rgb;
+use crate::perlin::Perlin;
 
 #[derive(Debug, Clone)]
 pub enum Textures {
     Checkered(CheckerTexture),
     Solid(Solid),
-    Img(ImageTexture)
+    Img(ImageTexture),
+    Noise(NoiseTexture),
 }
 
 impl Textures {
@@ -21,6 +23,10 @@ impl Textures {
 
     pub fn checker(scale: f64, even: Arc<Textures>, odd: Arc<Textures>) -> Arc<Self> {
         Arc::new(Self::Checkered(CheckerTexture {inv_scale: 1. / scale, even, odd}))
+    }
+
+    pub fn noise(scale: f64, rng: &mut ThreadRng) -> Arc<Self> {
+        Arc::new(Self::Noise(NoiseTexture::new(scale, rng)))
     }
 
     pub fn image(path : &str) -> Arc<Self> {
@@ -37,6 +43,7 @@ impl Textures {
             Self::Checkered(c) => c.value(u, v, p),
             Self::Solid(s) => s.value(),
             Self::Img(i) => i.value(u, v),
+            Self::Noise(n) => n.value(p)
         }
     }
 }
@@ -126,5 +133,24 @@ impl ImageTexture {
         Color3::new(pixel[0].into(), 
                     pixel[1].into(), 
                     pixel[2].into())
+    }
+}
+#[derive(Debug, Clone)]
+pub struct NoiseTexture {
+    noise: Perlin,
+    scale: f64,
+}
+
+impl NoiseTexture {
+    pub fn new(scale: f64, rng: &mut ThreadRng) -> Self {
+        Self {
+            noise: Perlin::new(rng),
+            scale,
+        }
+    }
+
+    pub fn value(&self, p : &Point3) -> Color3 {
+        let turb = self.scale * p.z + 10. * self.noise.turb(p, 7);
+        Color3::new(0.5, 0.5, 0.5) * (1. + turb.sin())
     }
 }

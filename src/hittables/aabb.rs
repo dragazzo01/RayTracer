@@ -36,18 +36,6 @@ impl AABB {
         }
     }
 
-    /// Returns an AABB that represents the entire universe.
-    ///
-    /// # Returns
-    /// An `AABB` with infinite intervals on all axes.
-    pub fn universe() -> Self {
-        Self {
-            x: Interval::universe(),
-            y: Interval::universe(),
-            z: Interval::universe(),
-        }
-    }
-
     /// Returns an empty AABB.
     ///
     /// # Returns

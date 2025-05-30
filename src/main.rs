@@ -7,6 +7,7 @@ mod prelude;
 mod random;
 mod ray;
 mod vec3;
+mod perlin;
 mod texture;
 
 use crate::camera::{CamArgs, Camera};
@@ -14,7 +15,7 @@ use crate::hittables::hittables::HittableList;
 use crate::prelude::*;
 
 fn main() -> Result<(), Error> {
-    match 6 {
+    match 5 {
         0 => temp1()?,
         1 => temp2()?,
         2 => final1()?,
@@ -22,9 +23,42 @@ fn main() -> Result<(), Error> {
         4 => quads()?,
         5 => simple_light()?,
         6 => cornell_box()?,
+        7 => perlin_spheres()?,
         _ => (),
     }
 
+    Ok(())
+}
+
+#[allow(dead_code)]
+fn perlin_spheres() -> Result<(), Error> {
+    println!("Rendering Perlin");
+    let mut world = HittableList::empty();
+    let rng = &mut rand::thread_rng();
+    // Materials
+    let pertext = Materials::lambertian(Textures::noise(4.0, rng));
+    // Quads
+    world.add_sphere(Point3::new(0.0, -1000.0, 0.0), 1000., pertext.clone());
+    world.add_sphere(Point3::new(0.0, 2.0, 0.0), 2., pertext.clone());
+
+    // Camera
+    let args = CamArgs {
+        aspect_ratio: 16.0 / 9.0,
+        image_width: 400,
+        samples_per_pixel: 100,
+        max_depth: 50,
+        vfov: 20.0,
+        look_from: Point3::new(13.,2.,3.),
+        look_at: Point3::new(0.,0.,0.),
+        v_up: Vec3::new(0.,1.,0.),
+        defocus_angle: 0.0,
+        focus_dist: 10.0,
+        background: Color3::new(0.7, 0.8, 1.),
+        thread_num: 2,
+    };
+
+    let camera = Camera::initilize(args);
+    let _ = camera.render(world.create_bvh(), "images/perlin.ppm");
     Ok(())
 }
 
@@ -83,16 +117,17 @@ fn cornell_box() -> Result<(), Error> {
 fn simple_light() -> Result<(), Error> {
     println!("Rendering Simple Light");
     let mut world = HittableList::empty();
+    let rng = &mut rand::thread_rng();
 
     // Materials
-    let teal   = Materials::lambertian_solid(Color3::new(0.2, 0.8, 0.8));
+    let pertex   = Materials::lambertian(Textures::noise(4.0, rng));
 
     // Quads
-    world.add_sphere(Vec3::new(0.0, -1000., 0.), 1000.0, teal.clone());
-    world.add_sphere(Vec3::new(0.0, 2., 0.), 2., teal);
+    world.add_sphere(Vec3::new(0.0, -1000., 0.), 1000.0, pertex.clone());
+    world.add_sphere(Vec3::new(0.0, 2., 0.), 2., pertex);
 
     let difflight = Materials::emmiter(Textures::solid_color(Color3::new(4., 4., 4.)));
-    world.add_sphere(Vec3::new(0.0, 7., 0.), 2.0, difflight.clone());
+    //world.add_sphere(Vec3::new(0.0, 7., 0.), 2.0, difflight.clone());
     world.add_quad(Point3::new(3., 1., -2.), Vec3::new(2., 0., 0.), Vec3::new(0., 2., 0.), difflight);
 
 
