@@ -15,7 +15,7 @@ pub struct HitRecord {
     pub t: f64,
     pub u: f64,
     pub v: f64,
-    pub mat: Arc<Materials>,
+    pub mat: Rc<Materials>,
     pub front_face: bool,
 }
 

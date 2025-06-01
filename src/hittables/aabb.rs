@@ -48,6 +48,14 @@ impl AABB {
         }
     }
 
+    // pub fn universe() -> Self {
+    //     Self {
+    //         x : Interval::universe(),
+    //         y : Interval::universe(),
+    //         z : Interval::universe(),
+    //     }
+    // }
+
     /// Creates an AABB that encloses two points.
     ///
     /// # Arguments

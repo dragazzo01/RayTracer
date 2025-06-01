@@ -2,6 +2,7 @@ use crate::hittables::sphere::Sphere;
 use crate::hittables::quad::Quad;
 use crate::hittables::bvh::BVHNode;
 use crate::hittables::translation::Translate;
+use crate::hittables::constant_medium::Medium;
 use crate::prelude::*;
 
 use super::translation::RotateY;
@@ -14,9 +15,11 @@ use super::translation::RotateY;
 pub enum Hittables {
     Sphere(Sphere),
     BVH(Box<BVHNode>),
+    List(Box<HittableList>),
     Quad(Quad),
     Translate(Translate),
     RotY(RotateY),
+    Medium(Medium),
 }
 
 impl Hittables {
@@ -29,8 +32,8 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the static sphere.
-    pub fn new_static_sphere(center: Point3, radius: f64, mat: Arc<Materials>) -> Arc<Self> {
-        Arc::new(Self::Sphere(Sphere::new_static(center, radius, mat)))
+    pub fn new_static_sphere(center: Point3, radius: f64, mat: Rc<Materials>) -> Rc<Self> {
+        Rc::new(Self::Sphere(Sphere::new_static(center, radius, mat)))
     }
 
     /// Creates a new moving sphere.
@@ -43,20 +46,28 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the moving sphere.
-    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) -> Arc<Self> {
-        Arc::new(Self::Sphere(Sphere::new_moving(start, end, radius, mat)))
+    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Rc<Materials>) -> Rc<Self> {
+        Rc::new(Self::Sphere(Sphere::new_moving(start, end, radius, mat)))
     }
 
-    pub fn new_quad(q : Point3, u : Vec3, v : Vec3, mat : Arc<Materials>) -> Arc<Self> {
-        Arc::new(Self::Quad(Quad::new(q, u, v, mat)))
+    pub fn new_quad(q : Point3, u : Vec3, v : Vec3, mat : Rc<Materials>) -> Rc<Self> {
+        Rc::new(Self::Quad(Quad::new(q, u, v, mat)))
     }
 
-    pub fn translate(object: Arc<Self>, offset: Vec3) -> Arc<Self> {
-        Arc::new(Self::Translate(Translate::new(object, offset)))
+    pub fn translate(object: Rc<Self>, offset: Vec3) -> Rc<Self> {
+        Rc::new(Self::Translate(Translate::new(object, offset)))
     }
 
-    pub fn rotate_y(object: Arc<Self>, degree: f64) -> Arc<Self> {
-        Arc::new(Self::RotY(RotateY::new(object, degree)))
+    pub fn rotate_y(object: Rc<Self>, degree: f64) -> Rc<Self> {
+        Rc::new(Self::RotY(RotateY::new(object, degree)))
+    }
+
+    // pub fn new_medium(boundary: Rc<Hittables>, density: f64, tex: Rc<Textures>) -> Rc<Self> {
+    //     Rc::new(Self::Medium(Medium::new(boundary ,density, tex)))
+    // }
+
+    pub fn new_solid_medium(boundary: Rc<Hittables>, density: f64, albedo: Color3) -> Rc<Self> {
+        Rc::new(Self::Medium(Medium::solid(boundary ,density, albedo)))
     }
 
     /// Returns the bounding box of the hittable object.
@@ -67,9 +78,11 @@ impl Hittables {
         match self {
             Self::Sphere(obj) => obj.bounding_box(),
             Self::BVH(obj) => obj.bounding_box(),
+            Self::List(obj) => obj.bounding_box(),
             Self::Quad(obj) => obj.bounding_box(),
             Self::Translate(obj) => obj.bounding_box(),
             Self::RotY(obj) => obj.bounding_box(),
+            Self::Medium(obj) => obj.bounding_box(),
         }
     }
 
@@ -82,13 +95,15 @@ impl Hittables {
     /// # Returns
     /// An `Option<HitRecord>` containing the hit information if the ray intersects the object,
     /// or `None` if there is no intersection.
-    pub fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
+    pub fn hit(&self, ray: &Ray, interval: Interval, rng:&mut ThreadRng ) -> Option<HitRecord> {
         match self {
             Self::Sphere(obj) => obj.hit(ray, interval),
-            Self::BVH(obj) => obj.hit(ray, interval),
+            Self::BVH(obj) => obj.hit(ray, interval, rng),
+            Self::List(obj) => obj.hit(ray, interval, rng),
             Self::Quad(obj) => obj.hit(ray, interval),
-            Self::Translate(obj) => obj.hit(ray, interval),
-            Self::RotY(obj) => obj.hit(ray, interval),
+            Self::Translate(obj) => obj.hit(ray, interval, rng),
+            Self::RotY(obj) => obj.hit(ray, interval, rng),
+            Self::Medium(obj) => obj.hit(ray, interval, rng),
         }
     }
 }
@@ -100,7 +115,8 @@ impl Hittables {
 /// - `bbox`: The bounding box enclosing all objects in the list.
 #[derive(Debug, Clone)]
 pub struct HittableList {
-    pub objects: Vec<Arc<Hittables>>,
+    pub objects: Vec<Rc<Hittables>>,
+    pub bbox : AABB,
 }
 
 impl HittableList {
@@ -111,15 +127,19 @@ impl HittableList {
     pub fn empty() -> Self {
         Self {
             objects: Vec::new(),
+            bbox : AABB::empty()
         }
     }
 
-    fn add(&mut self, object: Arc<Hittables>) {
+    pub fn add(&mut self, object: Rc<Hittables>) {
+        let tmp = object.clone();
         self.objects.push(object);
+        self.bbox = AABB::from_boxes(&self.bbox, tmp.bounding_box());
     }
 
     pub fn append(&mut self, new:&mut HittableList) {
         self.objects.append(&mut new.objects);
+        self.bbox = AABB::from_boxes(&self.bbox, new.bounding_box());
     }
 
     pub fn translate(&mut self, offset: Vec3) {
@@ -148,7 +168,7 @@ impl HittableList {
     /// - `center`: The center of the sphere as a `Point3`.
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
-    pub fn add_sphere(&mut self, center: Point3, radius: f64, mat: Arc<Materials>) {
+    pub fn add_sphere(&mut self, center: Point3, radius: f64, mat: Rc<Materials>) {
         self.add(Hittables::new_static_sphere(center, radius, mat));
     }
 
@@ -160,15 +180,15 @@ impl HittableList {
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
     #[allow(dead_code)]
-    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) {
+    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Rc<Materials>) {
         self.add(Hittables::new_moving_sphere(start, end, radius, mat));
     }
 
-    pub fn add_quad(&mut self, q : Point3, u : Vec3, v : Vec3, mat : Arc<Materials>) {
+    pub fn add_quad(&mut self, q : Point3, u : Vec3, v : Vec3, mat : Rc<Materials>) {
         self.add(Hittables::new_quad(q, u, v, mat))
     }
 
-    pub fn create_box(a : Point3, b : Point3, mat : Arc<Materials>) -> Self {
+    pub fn create_box(a : Point3, b : Point3, mat : Rc<Materials>) -> Self {
         Quad::create_box(a, b, mat)
     }
 
@@ -176,27 +196,35 @@ impl HittableList {
         Hittables::BVH(Box::new(BVHNode::from_list(self)))
     }
 
-    /// Determines if a ray hits any object in the hittable list.
-    ///
-    /// # Arguments
-    /// - `ray`: The ray to test for intersection.
-    /// - `interval`: The valid interval for the ray parameter `t`.
-    ///
-    /// # Returns
-    /// An `Option<HitRecord>` containing the hit information if the ray intersects any object,
-    /// or `None` if there is no intersection.
-    #[allow(dead_code)]
-    pub fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
+    // pub fn add_medium(&mut self, boundary: Rc<Hittables>, density: f64, tex: Rc<Textures>) {
+    //     self.add(Hittables::new_medium(boundary, density, tex))
+    // } 
+
+    pub fn add_solid_medium(&mut self, boundary: Rc<Hittables>, density: f64, albedo: Color3) {
+        self.add(Hittables::new_solid_medium(boundary, density, albedo))
+    } 
+
+    pub fn into_hittable(&mut self) -> Rc<Hittables> {
+        Rc::new(Hittables::List(Box::new(self.clone())))
+    }
+
+    pub fn bounding_box(&self) -> &AABB {
+        &self.bbox
+    }
+
+    pub fn hit(&self, ray : &Ray, interval : Interval, rng: &mut ThreadRng) -> Option<HitRecord> {
         let mut final_hit_record = None;
         let mut closest_so_far = interval.max;
-
         for object in &self.objects {
-            if let Some(hr) =  object.hit(ray, Interval::new(interval.min, closest_so_far)) {
-                closest_so_far = hr.t;
-                final_hit_record = Some(hr);
-            }   
+            match object.hit(ray, Interval::new(interval.min, closest_so_far), rng) {
+                Some(hr) => {
+                        closest_so_far = hr.t;
+                        final_hit_record = Some(hr);
+                        },
+                None => (),
+                
+            }
         }
-
-        final_hit_record
+        return final_hit_record;
     }
 }

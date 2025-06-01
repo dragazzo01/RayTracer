@@ -3,9 +3,8 @@ pub use std::io::{Error, Write};
 
 pub use rand::rngs::ThreadRng;
 pub use rand::Rng;
-pub use std::thread;
 
-pub use std::sync::Arc;
+pub use std::rc::Rc;
 
 //internal
 pub use crate::constants::*;

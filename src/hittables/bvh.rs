@@ -12,7 +12,7 @@ use crate::prelude::*;
 /// - `Node`: An internal node containing two child nodes and a bounding box.
 #[derive(Debug, Clone)]
 pub enum BVHNode {
-    Leaf(Arc<Hittables>),
+    Leaf(Rc<Hittables>),
     Node {
         left: Box<BVHNode>,
         right: Box<BVHNode>,
@@ -30,7 +30,7 @@ impl BVHNode {
     ///
     /// # Returns
     /// A new `BVHNode` instance.
-    fn new(objects: &mut Vec<Arc<Hittables>>, start: usize, end: usize) -> Self {
+    fn new(objects: &mut Vec<Rc<Hittables>>, start: usize, end: usize) -> Self {
         let span = end - start;
 
         if span == 1 {
@@ -82,7 +82,7 @@ impl BVHNode {
     ///
     /// # Returns
     /// An `Ordering` indicating the relative positions of the objects along the axis.
-    fn box_compare(a: &Arc<Hittables>, b: &Arc<Hittables>, axis: i32) -> Ordering {
+    fn box_compare(a: &Rc<Hittables>, b: &Rc<Hittables>, axis: i32) -> Ordering {
         let a_axis_interval = a.bounding_box().axis_interval(axis);
         let b_axis_interval = b.bounding_box().axis_interval(axis);
 
@@ -101,7 +101,7 @@ impl BVHNode {
     ///
     /// # Returns
     /// An `Ordering` indicating the relative positions of the objects along the x-axis.
-    fn box_compare_x(a: &Arc<Hittables>, b: &Arc<Hittables>) -> Ordering {
+    fn box_compare_x(a: &Rc<Hittables>, b: &Rc<Hittables>) -> Ordering {
         Self::box_compare(a, b, 0)
     }
 
@@ -113,7 +113,7 @@ impl BVHNode {
     ///
     /// # Returns
     /// An `Ordering` indicating the relative positions of the objects along the y-axis.
-    fn box_compare_y(a: &Arc<Hittables>, b: &Arc<Hittables>) -> Ordering {
+    fn box_compare_y(a: &Rc<Hittables>, b: &Rc<Hittables>) -> Ordering {
         Self::box_compare(a, b, 1)
     }
 
@@ -125,7 +125,7 @@ impl BVHNode {
     ///
     /// # Returns
     /// An `Ordering` indicating the relative positions of the objects along the z-axis.
-    fn box_compare_z(a: &Arc<Hittables>, b: &Arc<Hittables>) -> Ordering {
+    fn box_compare_z(a: &Rc<Hittables>, b: &Rc<Hittables>) -> Ordering {
         Self::box_compare(a, b, 2)
     }
 
@@ -153,22 +153,22 @@ impl BVHNode {
     /// # Returns
     /// An `Option<HitRecord>` containing the hit information if the ray intersects an object
     /// in the BVH node, or `None` if there is no intersection.
-    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    pub fn hit(&self, ray: &Ray, ray_t: Interval, rng:&mut ThreadRng ) -> Option<HitRecord> {
         self.bounding_box().hit(ray)?;
         
         match self {
-            Self::Leaf(object) => object.hit(ray, ray_t),
+            Self::Leaf(object) => object.hit(ray, ray_t, rng),
             Self::Node { left, right, .. } => {
                 let mut final_hit_record = None;
                 let mut closest_so_far = ray_t.max;
 
-                if let Some(hr) = left.hit(ray, Interval::new(ray_t.min, closest_so_far)) {
+                if let Some(hr) = left.hit(ray, Interval::new(ray_t.min, closest_so_far), rng) {
                     closest_so_far = hr.t;
                     final_hit_record = Some(hr);
 
                 }
 
-                if let Some(hr) = right.hit(ray, Interval::new(ray_t.min, closest_so_far)) {
+                if let Some(hr) = right.hit(ray, Interval::new(ray_t.min, closest_so_far), rng) {
                     final_hit_record = Some(hr);
                 }
 

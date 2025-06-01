@@ -13,27 +13,27 @@ pub enum Textures {
 }
 
 impl Textures {
-    pub fn solid_color(albedo : Color3) -> Arc<Self> {
-        Arc::new(Self::Solid(Solid {albedo}))
+    pub fn solid_color(albedo : Color3) -> Rc<Self> {
+        Rc::new(Self::Solid(Solid {albedo}))
     }
 
-    pub fn rgb(red : f64, green : f64, blue : f64) -> Arc<Self> {
+    pub fn rgb(red : f64, green : f64, blue : f64) -> Rc<Self> {
         Self::solid_color(Color3::new(red, green, blue))
     }
 
-    pub fn checker(scale: f64, even: Arc<Textures>, odd: Arc<Textures>) -> Arc<Self> {
-        Arc::new(Self::Checkered(CheckerTexture {inv_scale: 1. / scale, even, odd}))
+    pub fn checker(scale: f64, even: Rc<Textures>, odd: Rc<Textures>) -> Rc<Self> {
+        Rc::new(Self::Checkered(CheckerTexture {inv_scale: 1. / scale, even, odd}))
     }
 
-    pub fn noise(scale: f64, rng: &mut ThreadRng) -> Arc<Self> {
-        Arc::new(Self::Noise(NoiseTexture::new(scale, rng)))
+    pub fn noise(scale: f64, rng: &mut ThreadRng) -> Rc<Self> {
+        Rc::new(Self::Noise(NoiseTexture::new(scale, rng)))
     }
 
-    pub fn image(path : &str) -> Arc<Self> {
+    pub fn image(path : &str) -> Rc<Self> {
         let img= ImageTexture::new(path);
 
         match img {
-            Ok(x) => Arc::new(Self::Img(x)),
+            Ok(x) => Rc::new(Self::Img(x)),
             _ => Self::rgb(0., 1., 1.),
         }
     }
@@ -60,8 +60,8 @@ impl Solid {
 #[derive(Debug, Clone)]
 pub struct CheckerTexture {
     inv_scale: f64,
-    even: Arc<Textures>,
-    odd: Arc<Textures>,
+    even: Rc<Textures>,
+    odd: Rc<Textures>,
 }
 
 impl CheckerTexture {

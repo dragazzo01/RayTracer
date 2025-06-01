@@ -5,7 +5,7 @@ use crate::prelude::*;
 #[derive(Debug, Clone)]
 pub(crate) struct Lambertian {
     /// The albedo (reflectivity) of the material, represented as a color.
-    texture: Arc<Textures>,
+    texture: Rc<Textures>,
 }
 
 impl Lambertian {
@@ -22,7 +22,7 @@ impl Lambertian {
         Self { texture : Textures::solid_color(albedo) }
     }
 
-    pub(crate) fn new(texture: Arc<Textures>) -> Self {
+    pub(crate) fn new(texture: Rc<Textures>) -> Self {
         Self { texture }
     }
 

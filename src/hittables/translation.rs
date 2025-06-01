@@ -1,13 +1,13 @@
 use crate::prelude::*;
 #[derive(Debug, Clone)]
 pub struct Translate {
-    object: Arc<Hittables>,
+    object: Rc<Hittables>,
     offset: Vec3,
     bbox: AABB,
 }
 
 impl Translate {
-    pub fn new(object: Arc<Hittables>, offset: Vec3) -> Self {
+    pub fn new(object: Rc<Hittables>, offset: Vec3) -> Self {
         let bbox = object.bounding_box().offset(offset);
 
         Self {
@@ -21,10 +21,10 @@ impl Translate {
         &self.bbox
     }
 
-    pub fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
+    pub fn hit(&self, ray: &Ray, interval: Interval, rng: &mut ThreadRng ) -> Option<HitRecord> {
         let offest_ray = Ray::new_time(ray.origin - self.offset, ray.direction, ray.time);
 
-        match self.object.hit(&offest_ray, interval)  {
+        match self.object.hit(&offest_ray, interval, rng)  {
             Some(mut hr) => {
                 hr.point = hr.point + self.offset;
                 Some(hr)
@@ -36,14 +36,14 @@ impl Translate {
 
 #[derive(Debug, Clone)]
 pub struct RotateY {
-    object: Arc<Hittables>,
+    object: Rc<Hittables>,
     sin_theta: f64,
     cos_theta: f64,
     bbox: AABB,
 }
 
 impl RotateY {
-    pub fn new(object: Arc<Hittables>, angle: f64) -> Self {
+    pub fn new(object: Rc<Hittables>, angle: f64) -> Self {
         let radians = degrees_to_radians(angle);
         let sin_theta = radians.sin();
         let cos_theta = radians.cos();
@@ -86,7 +86,7 @@ impl RotateY {
         &self.bbox
     }
 
-    pub fn hit(&self, ray: &Ray, interval: Interval) -> Option<HitRecord> {
+    pub fn hit(&self, ray: &Ray, interval: Interval, rng: &mut ThreadRng) -> Option<HitRecord> {
         let origin = Point3::new(
             self.cos_theta * ray.origin.x - self.sin_theta * ray.origin.z,
             ray.origin.y,
@@ -101,7 +101,7 @@ impl RotateY {
 
         let new_ray = Ray::new_time(origin, direction, ray.time);
 
-        match self.object.hit(&new_ray, interval)  {
+        match self.object.hit(&new_ray, interval, rng)  {
             Some(mut hr) => {
                 hr.point = Point3::new(
                     self.cos_theta * hr.point.x - self.sin_theta * hr.point.z,
