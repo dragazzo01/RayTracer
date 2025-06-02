@@ -2,7 +2,7 @@ use crate::{prelude::*};
 
 #[derive(Debug, Clone)]
 pub struct Isotropic {
-    tex: Rc<Textures>
+    tex: Arc<Textures>
 }
 
 impl Isotropic {
@@ -10,7 +10,7 @@ impl Isotropic {
         Self {tex: Textures::solid_color(albedo)}
     }
 
-    // pub fn new(tex: Rc<Textures>) -> Self {
+    // pub fn new(tex: Arc<Textures>) -> Self {
     //     Self {tex}
     // }
 

@@ -2,13 +2,13 @@ use crate::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Medium {
-    boundary: Rc<Hittables>,
+    boundary: Arc<Hittables>,
     neg_inv_density: f64,
-    phase_function: Rc<Materials>,
+    phase_function: Arc<Materials>,
 }
 
 impl Medium {
-    // pub fn new(boundary: Rc<Hittables>, density: f64, tex: Rc<Textures>) -> Self {
+    // pub fn new(boundary: Arc<Hittables>, density: f64, tex: Arc<Textures>) -> Self {
     //     Self {
     //         boundary,
     //         neg_inv_density: -1./density,
@@ -16,7 +16,7 @@ impl Medium {
     //     }
     // }
 
-    pub fn solid(boundary: Rc<Hittables>, density: f64, color: Color3) -> Self {
+    pub fn solid(boundary: Arc<Hittables>, density: f64, color: Color3) -> Self {
         Self {
             boundary,
             neg_inv_density: -1./density,

@@ -11,7 +11,7 @@ use crate::prelude::*;
 pub struct Sphere {
     pub center: Ray,
     pub radius: f64,
-    pub mat: Rc<Materials>,
+    pub mat: Arc<Materials>,
     pub bbox: AABB,
 }
 
@@ -25,7 +25,7 @@ impl Sphere {
     ///
     /// # Returns
     /// A new `Sphere` instance.
-    pub fn new_static(center: Point3, radius: f64, mat: Rc<Materials>) -> Self {
+    pub fn new_static(center: Point3, radius: f64, mat: Arc<Materials>) -> Self {
         let rvec = Vec3::new(radius, radius, radius);
 
         Self {
@@ -51,7 +51,7 @@ impl Sphere {
         center_start: Point3,
         center_end: Point3,
         radius: f64,
-        mat: Rc<Materials>,
+        mat: Arc<Materials>,
     ) -> Self {
         let center = Ray::new(center_start, center_end - center_start);
 
@@ -118,7 +118,7 @@ impl Sphere {
             point,
             normal,
             t,
-            mat: Rc::clone(&self.mat),
+            mat: Arc::clone(&self.mat),
             front_face: false,
             u,
             v,

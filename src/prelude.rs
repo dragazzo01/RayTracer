@@ -4,7 +4,7 @@ pub use std::io::{Error, Write};
 pub use rand::rngs::ThreadRng;
 pub use rand::Rng;
 
-pub use std::rc::Rc;
+pub use std::sync::Arc;
 
 //internal
 pub use crate::constants::*;
@@ -16,5 +16,4 @@ pub use crate::materials::materials::Materials;
 pub use crate::random::*;
 pub use crate::ray::Ray;
 pub use crate::vec3::{Color3, Point3, Vec3};
-
-pub use crate::texture::*;
+pub use crate::texture::Textures;

@@ -2,11 +2,11 @@ use crate::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Diffuse {
-    texture: Rc<Textures>,
+    texture: Arc<Textures>,
 }
 
 impl Diffuse {
-    // pub fn new(texture : Rc<Textures>) -> Self {
+    // pub fn new(texture : Arc<Textures>) -> Self {
     //     Self {texture}
     // }
 

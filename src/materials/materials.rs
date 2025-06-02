@@ -31,12 +31,12 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Lambertian material.
-    pub fn lambertian_solid(albedo: Color3) -> Rc<Self> {
-        Rc::new(Self::Lambertian(Lambertian::solid(albedo)))
+    pub fn lambertian_solid(albedo: Color3) -> Arc<Self> {
+        Arc::new(Self::Lambertian(Lambertian::solid(albedo)))
     }
 
-    pub fn lambertian(texture: Rc<Textures>) -> Rc<Self> {
-        Rc::new(Self::Lambertian(Lambertian::new(texture)))
+    pub fn lambertian(texture: Arc<Textures>) -> Arc<Self> {
+        Arc::new(Self::Lambertian(Lambertian::new(texture)))
     }
 
     /// Creates a new Metallic material.
@@ -49,9 +49,9 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Metallic material.
-    pub fn metal(albedo: Color3, fuzz: f64) -> Rc<Self> {
+    pub fn metal(albedo: Color3, fuzz: f64) -> Arc<Self> {
         let fuzz = if fuzz < 1.0 { fuzz } else { 1.0 };
-        Rc::new(Self::Metal(Metal::new(albedo, fuzz)))
+        Arc::new(Self::Metal(Metal::new(albedo, fuzz)))
     }
 
     /// Creates a new Dielectric material.
@@ -63,24 +63,24 @@ impl Materials {
     /// # Returns
     ///
     /// A `Materials` enum variant containing a Dielectric material.
-    pub fn dielectric(refraction_index: f64) -> Rc<Self> {
-        Rc::new(Self::Dielectric(Dielectric::new(refraction_index)))
+    pub fn dielectric(refraction_index: f64) -> Arc<Self> {
+        Arc::new(Self::Dielectric(Dielectric::new(refraction_index)))
     }
 
-    // pub fn emmiter(texture : Rc<Textures>) -> Rc<Self> {
-    //     Rc::new(Self::Diffuse(Diffuse::new(texture)))
+    // pub fn emmiter(texture : Arc<Textures>) -> Arc<Self> {
+    //     Arc::new(Self::Diffuse(Diffuse::new(texture)))
     // }
 
-    pub fn emmiter_solid(color: Color3) -> Rc<Self> {
-        Rc::new(Self::Diffuse(Diffuse::solid(color)))
+    pub fn emmiter_solid(color: Color3) -> Arc<Self> {
+        Arc::new(Self::Diffuse(Diffuse::solid(color)))
     }
 
-    // pub fn isotropic(tex: Rc<Textures>) -> Rc<Self> {
-    //     Rc::new(Self::Isotropic(Isotropic::new(tex)))
+    // pub fn isotropic(tex: Arc<Textures>) -> Arc<Self> {
+    //     Arc::new(Self::Isotropic(Isotropic::new(tex)))
     // }
 
-    pub fn isotropic_solid(albedo: Color3) -> Rc<Self> {
-        Rc::new(Self::Isotropic(Isotropic::solid(albedo)))
+    pub fn isotropic_solid(albedo: Color3) -> Arc<Self> {
+        Arc::new(Self::Isotropic(Isotropic::solid(albedo)))
     }
 
     pub fn emitted(&self, u : f64, v : f64, p : &Point3) -> Color3 {

@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::thread;
 use indicatif::{ProgressBar, ProgressStyle};
 
 /// Contains the arguments required to initialize a `Camera`.
@@ -26,7 +27,7 @@ pub struct CamArgs {
 
     pub background : Color3,
     // The number of threads to use for rendering.
-    //pub thread_num: usize,
+    pub thread_num: usize,
 }
 
 /// Represents a camera in the ray tracer.
@@ -59,7 +60,7 @@ pub struct Camera {
 
     pub background_color : Color3,
     // The number of threads to use for rendering.
-    //thread_num: usize,
+    thread_num: usize,
 }
 
 impl Camera {
@@ -84,7 +85,7 @@ impl Camera {
         let defocus_angle = args.defocus_angle;
         let focus_dist = args.focus_dist;
         let background_color = args.background;
-        //let thread_num = args.thread_num;
+        let thread_num = args.thread_num;
 
         let image_height = (image_width as f64 / aspect_ratio) as usize;
         let image_height = if image_height < 1 { 1 } else { image_height };
@@ -134,7 +135,7 @@ impl Camera {
             defocus_disk_u,
             defocus_disk_v,
             background_color,
-            //thread_num,
+            thread_num,
         }
     }
 
@@ -262,6 +263,72 @@ impl Camera {
     pub fn render(&self, world: Hittables, path: &str) -> Result<(), Error> {
         let lines = self.calculate_img(world);
         self.write_pixels(lines, path)
+    }
+
+    #[allow(dead_code)]
+    pub fn multi_render(&self, world: Hittables, path: &str) -> Result<(), Error> {
+        let lines = self.multi_calc_img(world);
+        self.write_pixels(lines, path)
+    }
+
+    fn multi_calc_img(&self, world: Hittables) -> Vec<Vec<Color3>> {
+        let world = Arc::new(world);
+        let mut handles = vec![];
+
+        let progress_bar = Arc::new(ProgressBar::new(self.image_height as u64));
+        progress_bar.set_style(
+            ProgressStyle::with_template(
+                "[{elapsed_precise}] [{eta_precise}] [{bar:40.green/red}] {pos}/{len} {msg}",
+            )
+            .unwrap()
+            .progress_chars("=>-"),
+        );
+
+        println!("Creating a {} x {} image", self.image_width, self.image_height);
+        progress_bar.inc(0);
+
+
+        for thread in 0..self.thread_num {
+            let progress_bar = progress_bar.clone();
+            let camera = self.clone();
+            let world = world.clone();
+
+
+            let lines_per_thread = self.image_height / self.thread_num;
+            let lines_to_do = if thread == self.thread_num - 1 {
+                self.image_height - (thread * lines_per_thread)
+            } else {
+                lines_per_thread
+            };
+
+            let handle = thread::spawn(move || {
+                let mut rng = rand::thread_rng();
+                let mut local_results = Vec::with_capacity(lines_to_do);
+
+                for j in 0..lines_to_do {
+                    let line_idx = lines_per_thread * thread + j;
+                    let scan_line = camera.render_line(&world, line_idx, &mut rng);
+
+                    progress_bar.inc(1);
+
+                    local_results.push((line_idx, scan_line));
+                }
+                //println!("Thread {} finished", thread);
+                local_results
+            });
+            handles.push(handle);
+        }
+
+        let mut lines: Vec<Vec<Color3>> = vec![Vec::new(); self.image_height];
+        // Wait for all threads to complete
+        for handle in handles {
+            for (idx, line) in handle.join().unwrap() {
+                lines[idx] = line;
+            }
+        }
+
+        progress_bar.finish_with_message("All done!");
+        lines
     }
 
     pub fn calculate_img(&self, world: Hittables) -> Vec<Vec<Color3>> {

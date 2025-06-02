@@ -25,15 +25,15 @@ fn main() -> Result<(), Error> {
         6 => perlin_spheres()?,
         7 => cornell_box()?,
         8 => cornell_smoke()?,
-        9 => final_scene()?,
-        _ => (),
+        9 => final_scene(600, 5_000, 40)?,
+        _ => final_scene(400, 50, 4)?,
     }
 
     Ok(())
 }
 
 #[allow(dead_code)]
-fn final_scene() -> Result<(), Error> {
+fn final_scene(image_width: usize, samples_per_pixel: i32, max_depth: i32) -> Result<(), Error> {
     println!("Rendering Final Scene");
     let mut world = HittableList::empty();
     let rng = &mut rand::thread_rng();
@@ -42,6 +42,7 @@ fn final_scene() -> Result<(), Error> {
 
     // Ground boxes
     let ground = Materials::lambertian_solid(Color3::new(0.48, 0.83, 0.53));
+    //world.add_quad(Vec3::new(-1000.0, 0.0, -1000.0), Vec3::new(2000.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 2000.0), ground.clone());
     let boxes_per_side = 20;
     for i in 0..boxes_per_side {
         for j in 0..boxes_per_side {
@@ -60,7 +61,7 @@ fn final_scene() -> Result<(), Error> {
             ));
         }
     }
-    world.add(Rc::new(boxes1.create_bvh()));
+    world.append(&mut boxes1);
 
     // Light
     let light = Materials::emmiter_solid(Color3::new(7.0, 7.0, 7.0));
@@ -71,6 +72,7 @@ fn final_scene() -> Result<(), Error> {
         light,
     );
 
+    let glass = Materials::dielectric(1.5);
     // Moving sphere
     let center1 = Point3::new(400.0, 400.0, 200.0);
     let center2 = center1 + Vec3::new(30.0, 0.0, 0.0);
@@ -81,7 +83,7 @@ fn final_scene() -> Result<(), Error> {
     world.add_sphere(
         Point3::new(260.0, 150.0, 45.0),
         50.0,
-        Materials::dielectric(1.5),
+        glass.clone(),
     );
     world.add_sphere(
         Point3::new(0.0, 150.0, 145.0),
@@ -90,25 +92,22 @@ fn final_scene() -> Result<(), Error> {
     );
 
     // Medium spheres
-    let mut boundary = HittableList::empty();
-    boundary.add_sphere(
-        Point3::new(360.0, 150.0, 145.0),
-        70.0,
-        Materials::dielectric(1.5),
+    world.add_sphere(
+        Point3::new(360., 150., 145.),
+        70.,
+        Materials::metal(Color3::new(0.1, 0.1, 0.9), 0.1)
     );
-    world.add_solid_medium(boundary.into_hittable(), 0.2, Color3::new(0.2, 0.4, 0.9));
-    world.append(&mut boundary);
     
 
     let mut boundary2 = HittableList::empty();
     boundary2.add_sphere(
         Point3::new(0.0, 0.0, 0.0),
         5000.0,
-        Materials::dielectric(1.5),
+        glass.clone(),
     );
     world.add_solid_medium(boundary2.into_hittable(), 0.0001, Color3::new(1.0, 1.0, 1.0));
 
-    // Earth and noise spheres
+    //Earth and noise spheres
     let earth_texture = Textures::image("assets/earthmap.jpg");
     let earth_material = Materials::lambertian(earth_texture);
     world.add_sphere(Point3::new(400.0, 200.0, 400.0), 100.0, earth_material);
@@ -128,29 +127,28 @@ fn final_scene() -> Result<(), Error> {
         );
     }
 
-    let mut rotated_boxes = boxes2;
-    rotated_boxes.rotate_y(15.0);
-    rotated_boxes.translate(Vec3::new(-100.0, 270.0, 395.0));
-    world.append(&mut rotated_boxes);
+    boxes2.rotate_y(15.0);
+    boxes2.translate(Vec3::new(-100.0, 270.0, 395.0));
+    world.append(&mut boxes2);
 
     // Camera
     let args = CamArgs {
         aspect_ratio: 1.0,
-        image_width: 800, // Default value, can be parameterized
-        samples_per_pixel: 100, // Default value, can be parameterized
-        max_depth: 50, // Default value, can be parameterized
+        image_width, // Default value, can be parameterized
+        samples_per_pixel, // Default value, can be parameterized
+        max_depth, // Default value, can be parameterized
         vfov: 40.0,
         look_from: Point3::new(478.0, 278.0, -600.0),
         look_at: Point3::new(278.0, 278.0, 0.0),
         v_up: Vec3::new(0.0, 1.0, 0.0),
         defocus_angle: 0.0,
         focus_dist: 10.0,
-        background: Color3::zero(),
-        // thread_num: 4,
+        background: Color3::new(0.0, 0.0, 0.0),
+        thread_num: 8,
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(world.create_bvh(), "images/final_2.ppm");
+    let _ = camera.multi_render(world.create_bvh(), "images/final_2.ppm");
     Ok(())
 }
 
@@ -178,7 +176,7 @@ fn perlin_spheres() -> Result<(), Error> {
         defocus_angle: 0.0,
         focus_dist: 10.0,
         background: Color3::new(0.7, 0.8, 1.),
-        // thread_num: 3,
+        thread_num: 3,
     };
 
     let camera = Camera::initilize(args);
@@ -231,7 +229,7 @@ fn cornell_smoke() -> Result<(), Error> {
         defocus_angle: 0.0,
         focus_dist: 10.0,
         background: Color3::zero(),
-        // thread_num: 1,
+        thread_num: 1,
     };
 
     let camera = Camera::initilize(args);
@@ -281,7 +279,7 @@ fn cornell_box() -> Result<(), Error> {
         defocus_angle: 0.0,
         focus_dist: 10.0,
         background: Color3::zero(),
-        // thread_num: 1,
+        thread_num: 1,
     };
 
     let camera = Camera::initilize(args);
@@ -321,7 +319,7 @@ fn simple_light() -> Result<(), Error> {
         focus_dist: 10.,
 
         background: Color3::new(0., 0., 0.),
-        // thread_num: 2,
+        thread_num: 2,
     };
 
     let camera = Camera::initilize(args);
@@ -361,7 +359,7 @@ fn quads() -> Result<(), Error> {
         defocus_angle: 0.,
         focus_dist: 10.,
         background: Color3::new(0.7, 0.8, 1.),
-        // thread_num: 2,
+        thread_num: 2,
     };
 
     let camera = Camera::initilize(args);
@@ -391,7 +389,7 @@ fn earth() -> Result<(), Error> {
         defocus_angle: 0.,
         focus_dist: 10.,
         background: Color3::new(0.7, 0.8, 1.),
-        // thread_num: 2,
+        thread_num: 2,
     };
 
     let camera = Camera::initilize(args);
@@ -428,7 +426,7 @@ fn temp1() -> Result<(), Error> {
         defocus_angle: 0.,
         focus_dist: 10.,
         background: Color3::new(0.7, 0.8, 1.),
-        // thread_num: 4,
+        thread_num: 4,
     };
     let camera = Camera::initilize(args);
     let _ = camera.render(world.create_bvh(), "images/temp1.ppm");
@@ -495,11 +493,11 @@ fn final1() -> Result<(), Error> {
         defocus_angle: 0.6,
         focus_dist: 10.,
         background: Color3::new(0.7, 0.8, 1.),
-        // thread_num: 6,
+        thread_num: 6,
     };
 
     let camera = Camera::initilize(args);
-    let _ = camera.render(world.create_bvh(), "images/final1.ppm");
+    let _ = camera.multi_render(world.create_bvh(), "images/final1.ppm");
     Ok(())
 }
 
@@ -572,7 +570,7 @@ fn temp2() -> Result<(), Error> {
         defocus_angle: 0.6,
         focus_dist: 10.,
         background: Color3::new(0.7, 0.8, 1.),
-        // thread_num: 2,
+        thread_num: 2,
     };
 
     let camera = Camera::initilize(args);

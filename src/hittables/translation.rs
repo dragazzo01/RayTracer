@@ -1,13 +1,13 @@
 use crate::prelude::*;
 #[derive(Debug, Clone)]
 pub struct Translate {
-    object: Rc<Hittables>,
+    object: Arc<Hittables>,
     offset: Vec3,
     bbox: AABB,
 }
 
 impl Translate {
-    pub fn new(object: Rc<Hittables>, offset: Vec3) -> Self {
+    pub fn new(object: Arc<Hittables>, offset: Vec3) -> Self {
         let bbox = object.bounding_box().offset(offset);
 
         Self {
@@ -36,14 +36,14 @@ impl Translate {
 
 #[derive(Debug, Clone)]
 pub struct RotateY {
-    object: Rc<Hittables>,
+    object: Arc<Hittables>,
     sin_theta: f64,
     cos_theta: f64,
     bbox: AABB,
 }
 
 impl RotateY {
-    pub fn new(object: Rc<Hittables>, angle: f64) -> Self {
+    pub fn new(object: Arc<Hittables>, angle: f64) -> Self {
         let radians = degrees_to_radians(angle);
         let sin_theta = radians.sin();
         let cos_theta = radians.cos();

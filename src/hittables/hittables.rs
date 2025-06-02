@@ -32,8 +32,8 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the static sphere.
-    pub fn new_static_sphere(center: Point3, radius: f64, mat: Rc<Materials>) -> Rc<Self> {
-        Rc::new(Self::Sphere(Sphere::new_static(center, radius, mat)))
+    pub fn new_static_sphere(center: Point3, radius: f64, mat: Arc<Materials>) -> Arc<Self> {
+        Arc::new(Self::Sphere(Sphere::new_static(center, radius, mat)))
     }
 
     /// Creates a new moving sphere.
@@ -46,28 +46,28 @@ impl Hittables {
     ///
     /// # Returns
     /// A new `Hittables` instance containing the moving sphere.
-    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Rc<Materials>) -> Rc<Self> {
-        Rc::new(Self::Sphere(Sphere::new_moving(start, end, radius, mat)))
+    pub fn new_moving_sphere(start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) -> Arc<Self> {
+        Arc::new(Self::Sphere(Sphere::new_moving(start, end, radius, mat)))
     }
 
-    pub fn new_quad(q : Point3, u : Vec3, v : Vec3, mat : Rc<Materials>) -> Rc<Self> {
-        Rc::new(Self::Quad(Quad::new(q, u, v, mat)))
+    pub fn new_quad(q : Point3, u : Vec3, v : Vec3, mat : Arc<Materials>) -> Arc<Self> {
+        Arc::new(Self::Quad(Quad::new(q, u, v, mat)))
     }
 
-    pub fn translate(object: Rc<Self>, offset: Vec3) -> Rc<Self> {
-        Rc::new(Self::Translate(Translate::new(object, offset)))
+    pub fn translate(object: Arc<Self>, offset: Vec3) -> Arc<Self> {
+        Arc::new(Self::Translate(Translate::new(object, offset)))
     }
 
-    pub fn rotate_y(object: Rc<Self>, degree: f64) -> Rc<Self> {
-        Rc::new(Self::RotY(RotateY::new(object, degree)))
+    pub fn rotate_y(object: Arc<Self>, degree: f64) -> Arc<Self> {
+        Arc::new(Self::RotY(RotateY::new(object, degree)))
     }
 
-    // pub fn new_medium(boundary: Rc<Hittables>, density: f64, tex: Rc<Textures>) -> Rc<Self> {
-    //     Rc::new(Self::Medium(Medium::new(boundary ,density, tex)))
+    // pub fn new_medium(boundary: Arc<Hittables>, density: f64, tex: Arc<Textures>) -> Arc<Self> {
+    //     Arc::new(Self::Medium(Medium::new(boundary ,density, tex)))
     // }
 
-    pub fn new_solid_medium(boundary: Rc<Hittables>, density: f64, albedo: Color3) -> Rc<Self> {
-        Rc::new(Self::Medium(Medium::solid(boundary ,density, albedo)))
+    pub fn new_solid_medium(boundary: Arc<Hittables>, density: f64, albedo: Color3) -> Arc<Self> {
+        Arc::new(Self::Medium(Medium::solid(boundary ,density, albedo)))
     }
 
     /// Returns the bounding box of the hittable object.
@@ -115,7 +115,7 @@ impl Hittables {
 /// - `bbox`: The bounding box enclosing all objects in the list.
 #[derive(Debug, Clone)]
 pub struct HittableList {
-    pub objects: Vec<Rc<Hittables>>,
+    pub objects: Vec<Arc<Hittables>>,
     pub bbox : AABB,
 }
 
@@ -131,7 +131,7 @@ impl HittableList {
         }
     }
 
-    pub fn add(&mut self, object: Rc<Hittables>) {
+    pub fn add(&mut self, object: Arc<Hittables>) {
         let tmp = object.clone();
         self.objects.push(object);
         self.bbox = AABB::from_boxes(&self.bbox, tmp.bounding_box());
@@ -168,7 +168,7 @@ impl HittableList {
     /// - `center`: The center of the sphere as a `Point3`.
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
-    pub fn add_sphere(&mut self, center: Point3, radius: f64, mat: Rc<Materials>) {
+    pub fn add_sphere(&mut self, center: Point3, radius: f64, mat: Arc<Materials>) {
         self.add(Hittables::new_static_sphere(center, radius, mat));
     }
 
@@ -180,15 +180,15 @@ impl HittableList {
     /// - `radius`: The radius of the sphere.
     /// - `mat`: The material of the sphere.
     #[allow(dead_code)]
-    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Rc<Materials>) {
+    pub fn add_moving_sphere(&mut self, start: Point3, end: Point3, radius: f64, mat: Arc<Materials>) {
         self.add(Hittables::new_moving_sphere(start, end, radius, mat));
     }
 
-    pub fn add_quad(&mut self, q : Point3, u : Vec3, v : Vec3, mat : Rc<Materials>) {
+    pub fn add_quad(&mut self, q : Point3, u : Vec3, v : Vec3, mat : Arc<Materials>) {
         self.add(Hittables::new_quad(q, u, v, mat))
     }
 
-    pub fn create_box(a : Point3, b : Point3, mat : Rc<Materials>) -> Self {
+    pub fn create_box(a : Point3, b : Point3, mat : Arc<Materials>) -> Self {
         Quad::create_box(a, b, mat)
     }
 
@@ -196,16 +196,16 @@ impl HittableList {
         Hittables::BVH(Box::new(BVHNode::from_list(self)))
     }
 
-    // pub fn add_medium(&mut self, boundary: Rc<Hittables>, density: f64, tex: Rc<Textures>) {
+    // pub fn add_medium(&mut self, boundary: Arc<Hittables>, density: f64, tex: Arc<Textures>) {
     //     self.add(Hittables::new_medium(boundary, density, tex))
     // } 
 
-    pub fn add_solid_medium(&mut self, boundary: Rc<Hittables>, density: f64, albedo: Color3) {
+    pub fn add_solid_medium(&mut self, boundary: Arc<Hittables>, density: f64, albedo: Color3) {
         self.add(Hittables::new_solid_medium(boundary, density, albedo))
     } 
 
-    pub fn into_hittable(&mut self) -> Rc<Hittables> {
-        Rc::new(Hittables::List(Box::new(self.clone())))
+    pub fn into_hittable(&mut self) -> Arc<Hittables> {
+        Arc::new(Hittables::List(Box::new(self.clone())))
     }
 
     pub fn bounding_box(&self) -> &AABB {
